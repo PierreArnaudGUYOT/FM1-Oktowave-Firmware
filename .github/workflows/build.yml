@@ -37,6 +37,9 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+    permissions:
+      contents: read
+      actions: read      # main's site includes the groovebox branch's (its latest successful run's artifact)
     steps:
       - uses: actions/checkout@v4
         with:
@@ -117,6 +120,13 @@ jobs:
              -o build/host/wavelet_test tests/wavelet_test.c
           build/host/wavelet_test build/host | tee build/wavelet_test.log
           node tools/wavelet_ref.js build/host | tee -a build/wavelet_test.log
+      - name: "OKTOGROOVE: the groovebox edition's engine list test (only where tests/groovebox_test.c exists)"
+        if: always()
+        run: |
+          if [ -f tests/groovebox_test.c ]; then
+            cc -w -DOKTOWAVE_GROOVEBOX=1 -DOKTOWAVE_BOOT=1 -Ibuild/gen -Ifirmware/src -o build/host/groovebox_test tests/groovebox_test.c -lm
+            build/host/groovebox_test | tee build/groovebox_test.log
+          fi
       - name: Browser emulator (web/emu)
         run: sh web/emu/build.sh
       - name: Site (installer + try it in the browser + manual)
@@ -131,6 +141,24 @@ jobs:
           cp docs/manual.html build/site/manual/index.html
           cp docs/controls.jpg build/site/manual/
           ls -R build/site | head -40
+      - name: "Keep this branch's site (the main site shows the groovebox branch's under /groovebox/)"
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-${{ github.ref_name }}
+          path: build/site
+          retention-days: 90
+      - name: "Add the groovebox edition's site (main only: the latest successful run of the groovebox branch)"
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ID=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow build.yml --branch wavelet-groovebox --status success --limit 1 --json databaseId --jq '.[0].databaseId' || true)
+          if [ -n "$ID" ] && gh run download "$ID" --repo "$GITHUB_REPOSITORY" -n site-wavelet-groovebox -D build/site/groovebox; then
+            sed -i 's#<a href="manual/">manual</a>#<a href="manual/">manual</a> · <a href="groovebox/">groovebox edition</a>#' build/site/index.html
+            echo "groovebox site from run $ID"; ls build/site/groovebox | head
+          else
+            echo "no groovebox site yet"
+          fi
       - name: Baselines (to commit by hand after an update run)
         if: always()
         uses: actions/upload-artifact@v4
@@ -193,3 +221,14 @@ jobs:
           gh release create "$TAG" $PRE --repo "$GITHUB_REPOSITORY" --title "OKTOWAVE ${TAG#v}" \
             --notes "OKTOWAVE ${TAG#v}: Felucca plus the WAVELET engine for the M-VAVE FM-1. Install with the web installer (https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/) or tools/fm1_install.py. Not yet run on a real FM-1: install at your own risk, keep the way back to the official firmware. SHA-256 sums are in SHA256SUMS." \
             "$DIR"/*.fwsc "$DIR"/*.bin "$DIR"/SHA256SUMS "$DIR"/LICENSE "$DIR"/LICENSING.md
+  refresh-main:
+    needs: build
+    if: github.ref == 'refs/heads/wavelet-groovebox'
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+    steps:
+      - name: "Rebuild main so that its site shows this branch (/groovebox/)"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run build.yml --repo "$GITHUB_REPOSITORY" --ref main

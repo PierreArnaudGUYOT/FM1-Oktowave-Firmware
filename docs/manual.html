@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OKTOWAVE manual</title>
+<title>OKTOGROOVE manual</title>
 <meta name="description" content="OKTOWAVE: the Wavelet Synthesizer's engine on the M-VAVE FM-1, as a Felucca firmware. Install, play, the WAVELET engine's parameters, the presets.">
 <style>
   :root { --bg: #fbfaf7; --fg: #1d1c1a; --dim: #6b675f; --line: #d9d4c8; --card: #f1eee6; --acc: #b5451b; --code: #ece8de; }
@@ -38,7 +38,7 @@
 </head>
 <body>
 <main>
-<h1>OKTOWAVE <small>manual · version 0.1 · for the M-VAVE FM-1</small></h1>
+<h1>OKTOGROOVE <small>manual · version 0.1 · for the M-VAVE FM-1</small></h1>
 <p>OKTOWAVE is an alternative firmware for the M-VAVE FM-1 pocket synthesizer: Hügelton Instruments'
 <a href="https://github.com/hugelton/Felucca">Felucca</a> 1.6.1 with one more synthesis engine, <b>WAVELET</b>, the
 subtractive engine of the <a href="https://github.com/PierreArnaudGUYOT/Free-Wavelet-Synthesizer-VST">Wavelet
@@ -46,6 +46,16 @@ Synthesizer</a> by Pierre Arnaud GUYOT (OktoPierre), rewritten for the FM-1's pr
 Everything else is Felucca: four tracks, its thirteen engines, the sequencer, arpeggiator, chords, effects, USB
 audio and MIDI. This manual covers what OKTOWAVE adds; for the rest, Felucca's
 <a href="https://github.com/hugelton/Felucca/wiki/Home">wiki</a> is the reference.</p>
+
+<div class="card">
+<p><b>This is the groovebox edition (branch <code>wavelet-groovebox</code>).</b> It is Felucca's groovebox (four tracks, the sequencer,
+arpeggiator, chord keys, effects, USB audio and MIDI) with <b>WAVELET as its sound engine</b>: the engines you can pick are
+<b>WAVELET</b> (69 presets, OktoPierre's TOP Sounds first) and <b>DRUM</b> (Felucca's kits, for the rhythm tracks). The other eleven
+engines of Felucca (ANALOG, FM6, PHASE, LOFI, SAMPLE, VOICE, TRIO, WHEEL, GRAIN, PHYS, NOISE, SLICE) are no longer offered: not in the
+PRESETS list, not on the EDIT keys. They stay in the firmware, so a project or a user preset saved by Felucca or OKTOWAVE that uses
+one still loads and sounds; the EDIT page then shows the first engine for it, and choosing another engine replaces it. The edition with
+all the engines is OKTOWAVE (branch <code>main</code>). A few more details are in section 12.</p>
+</div>
 
 <nav class="toc">
 <a href="#install">1. Install</a>
@@ -59,6 +69,7 @@ audio and MIDI. This manual covers what OKTOWAVE adds; for the rest, Felucca's
 <a href="#tips">9. Sound design tips</a>
 <a href="#build">10. Build and test it yourself</a>
 <a href="#credits">11. Credits and licences</a>
+<a href="#groove">12. The groovebox edition</a>
 </nav>
 
 <div class="card warn">
@@ -332,7 +343,21 @@ GPL-3.0-only (the firmware as a whole is GPL-3.0-only). It is a port of engine A
 <li>M-VAVE and FM-1 are trademarks of their respective owners. OKTOWAVE is not affiliated with or endorsed by
 M-VAVE, nor by Hügelton Instruments.</li>
 </ul>
-<p class="dim">OKTOWAVE manual, version 0.1, 2026-10-18.</p>
+<h2 id="groove">12. The groovebox edition</h2>
+<ul>
+<li><b>What changes</b>: the engine list (PRESETS knob 2 / ENG column, the EDIT layer's white keys: WAVELET first, DRUM second) and the
+power-on and project defaults (the four WAVELET / DRUM tracks of section 3 also start an empty or an older project). Nothing else:
+the sequencer, the effects, USB and MIDI, the editor protocol, the storage formats are Felucca's, byte for byte.</li>
+<li><b>Why</b>: the FM-1 is a small machine; this edition is the one to play when WAVELET is the sound you want, without the other
+engines in the way, and the base for giving WAVELET more room later (the flash and RAM of the unused engines).</li>
+<li><b>Old projects</b>: a track left on an engine this edition does not offer plays as before. It appears as the first engine on its
+page; turning the engine knob goes WAVELET, DRUM.</li>
+<li><b>Install</b>: the same package format and installer as OKTOWAVE and Felucca; the version string reads <code>OKTOGROOVE v0.1</code>.
+Both editions can be installed one over the other; projects saved with one load in the other (a WAVELET track needs an edition that
+has WAVELET).</li>
+<li><b>Try it in the browser</b>: the page of this edition under <code>/groovebox/</code> on the project's site.</li>
+</ul>
+<p class="dim">OKTOGROOVE manual, version 0.1, 2026-10-18.</p>
 </main>
 </body>
 </html>

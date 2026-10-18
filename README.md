@@ -1,5 +1,7 @@
 # FM1 - Oktowave Firmware
 
+> **Two editions.** `main` = **OKTOWAVE**: Felucca with all its engines plus WAVELET. `wavelet-groovebox` = **OKTOGROOVE**: Felucca's groovebox with WAVELET as its sound engine (WAVELET + DRUM only offered, the other engines hidden). Same sources, one define (`OKTOWAVE_GROOVEBOX`) in `src/felucca.c`; see the manual, section 12.
+
 [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-blue.svg)](LICENSE)
 
 **OKTOWAVE** is an alternative firmware for the M-VAVE FM-1 pocket synthesizer: Hügelton Instruments'
