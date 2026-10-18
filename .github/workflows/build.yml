@@ -43,25 +43,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Python packages (the fonts and icons are rasterised at build time)
+      - name: "Python packages (the fonts and icons are rasterised at build time)"
         run: pip install Pillow fonttools
-      - name: JieLi pi32v2 toolchain (clang 4.0.1, from JieLi's package server)
+      - name: "JieLi pi32v2 toolchain (clang 4.0.1, from JieLi's package server)"
         run: |
           sh tools/get_toolchain.sh "$HOME/.jieli"
           ls "$HOME/.jieli/toolchain/pi32v2/bin" | head -5
-      - name: JieLi AC79 SDK files (Apache-2.0: uboot.boot, cfg_tool.bin, eq_cfg_hw.bin; SHA-256 checked by build.py)
+      - name: "JieLi AC79 SDK files (Apache-2.0: uboot.boot, cfg_tool.bin, eq_cfg_hw.bin; SHA-256 checked by build.py)"
         run: |
           git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 --filter=blob:none --sparse \
               https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"
           cd "$HOME/fw-AC79_AIoT_SDK" && git sparse-checkout set cpu/wl82/tools && ls cpu/wl82/tools | head
-      - name: Version
+      - name: "Version"
         id: ver
         run: |
           REL="${{ github.event.inputs.release }}"
           case "${{ github.ref }}" in refs/tags/v*) REL="${GITHUB_REF#refs/tags/v}";; esac
           echo "release=$REL" >> "$GITHUB_OUTPUT"
           echo "release: '$REL'"
-      - name: Build the firmware
+      - name: "Build the firmware"
         run: |
           export JIELI_TOOLCHAIN="$HOME/.jieli/toolchain" AC79_SDK="$HOME/fw-AC79_AIoT_SDK"
           if [ -n "${{ steps.ver.outputs.release }}" ]; then
@@ -70,7 +70,7 @@ jobs:
             python3 tools/build.py
           fi
           ls -la build/*.fwsc build/*.bin
-      - name: Host tests (tests/run_tests.sh)
+      - name: "Host tests (tests/run_tests.sh)"
         run: |
           export AC79_SDK="$HOME/fw-AC79_AIoT_SDK"
           if [ "${{ github.event.inputs.update_baselines }}" = "true" ]; then
@@ -78,7 +78,7 @@ jobs:
           else
             sh tests/run_tests.sh 2>&1 | tee build/tests.log
           fi
-      - name: WAVELET engine: the standalone host test and the floating-point reference
+      - name: "WAVELET engine: the standalone host test and the floating-point reference"
         if: always()
         run: |
           mkdir -p build/host
@@ -90,9 +90,9 @@ jobs:
       - uses: mymindstorm/setup-emsdk@v14
         with:
           version: 3.1.74
-      - name: Browser emulator (web/emu)
+      - name: "Browser emulator (web/emu)"
         run: sh web/emu/build.sh
-      - name: Site (installer + try it in the browser + manual)
+      - name: "Site (installer + try it in the browser + manual)"
         run: |
           PKG=$(ls build/*.fwsc | head -1)
           VER="${{ steps.ver.outputs.release }}"; [ -n "$VER" ] || VER="dev-$(git rev-parse --short HEAD)"
@@ -102,7 +102,7 @@ jobs:
           cp docs/manual.html build/site/manual/index.html
           cp docs/controls.jpg build/site/manual/
           ls -R build/site | head -40
-      - name: Baselines (to commit by hand after an update run)
+      - name: "Baselines (to commit by hand after an update run)"
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -115,7 +115,7 @@ jobs:
             build/tests.log
             build/wavelet_test.log
           if-no-files-found: ignore
-      - name: Package
+      - name: "Package"
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -125,7 +125,7 @@ jobs:
             build/felucca.bin
             build/release-*/
           if-no-files-found: ignore
-      - name: Site artifact
+      - name: "Site artifact"
         uses: actions/upload-pages-artifact@v3
         with:
           path: build/site
