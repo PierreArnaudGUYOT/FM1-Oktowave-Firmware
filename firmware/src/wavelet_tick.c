@@ -9,9 +9,11 @@ static int wav_want(const track_t *t, int16_t *w)        /* E0 .. E3 of a part, 
     uint32_t i;
     for (i = 0; i < 4u; i++) {
         int16_t v = t->p[P_E0 + i];
-        if (i == 0u) v = (int16_t)clamp(v, 0, 5);
+        if (i == 0u) v = (int16_t)clamp(v, 0, 11);
         else if (i == 1u) v = (int16_t)clamp(v, 0, WAV_NW - 1);
         else v = (int16_t)clamp(v, 0, 127);
+        if (i >= 2u && WAV_IS_B(t->p[P_E0]))
+            v = 0;                                      /* engine B: BARS and TILT are gains, not part of the table */
         if (w[i] != v) {
             w[i] = v;
             d = 1;

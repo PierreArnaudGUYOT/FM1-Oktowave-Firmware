@@ -112,9 +112,9 @@ jobs:
         if: always()
         run: |
           mkdir -p build/host
-          python3 firmware/engines/tools/gen_engine_tables.py build/host/fe_tables.h
+          python3 tools/gen_tables.py build/host/felucca_tables.h
           cc -O2 -std=gnu99 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-dangling-else -I build/host \
-             -o build/host/wavelet_test tests/wavelet_test.c
+             -o build/host/wavelet_test tests/wavelet_test.c -lm
           build/host/wavelet_test build/host | tee build/wavelet_test.log
           node tools/wavelet_ref.js build/host | tee -a build/wavelet_test.log
       - name: Browser emulator (web/emu)

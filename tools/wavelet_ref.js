@@ -89,7 +89,42 @@ function sparsify(c, s) {
   return { K, nz };
 }
 // the table as the firmware holds it: rows of the 9 layers and DRY, Q14
+// engine B (WAVE 6 .. 11): the atoms of a pattern as the Wavelet Synthesizer's patternCoeffs writes them (seed 1), each band's layer
+// scaled to a peak of 1.0 (16384)
+function patternAtoms(pattern) {
+  const c = new Float64Array(N);
+  let s = (2654435761 + 12345) >>> 0;
+  const r = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+  for (let b = 1; b <= NB; b++) {
+    const n = 1 << (b - 1);
+    for (let k = 0; k < n; k++) {
+      let v;
+      switch (pattern) {
+        case 0: v = 1; break;
+        case 1: v = b === 1 ? 1 : (k < n / 2 ? 1 : -1); break;
+        case 2: v = (b & 1) ? 1 : -1; break;
+        case 3: v = (k & 1) ? -1 : 1; break;
+        case 4: v = k === 0 ? 1 : 0; break;
+        default: v = r() * 2 - 1; break;
+      }
+      c[n + k] = v;
+    }
+  }
+  return c;
+}
+function tableB(wave, wavelet) {
+  const f = FILTERS[wavelet];
+  const c = patternAtoms(wave - 6);
+  const t = new Float64Array(N * NL);
+  for (let b = 1; b <= NB; b++) {
+    const l = idwtBand(c, f, b);
+    let peak = 0; for (let i = 0; i < N; i++) peak = Math.max(peak, Math.abs(l[i]));
+    for (let i = 0; i < N; i++) t[i * NL + b - 1] = peak > 0 ? l[i] / peak * 16384 : 0;
+  }
+  return { t, K: 0, nz: 0, tie: false, c, cmag: Float64Array.from(c, Math.abs) };
+}
 function table(wave, wavelet, e2, sprs) {
+  if (wave >= 6) return tableB(wave, wavelet);
   const f = FILTERS[wavelet];
   const c = dwt(source(wave, e2), f);
   const mags = [], cmag = Float64Array.from(c, Math.abs);

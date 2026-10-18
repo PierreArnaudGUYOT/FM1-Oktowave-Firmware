@@ -4,9 +4,9 @@
 
 **OKTOWAVE** is an alternative firmware for the M-VAVE FM-1 pocket synthesizer: Hügelton Instruments'
 [Felucca](https://github.com/hugelton/Felucca) 1.6.1 (four tracks, 13 synthesis engines, sequencer, arpeggiator,
-effects, USB audio and MIDI) plus one more engine, **WAVELET**: engine A (subtractive) of the
+effects, USB audio and MIDI) plus one more engine, **WAVELET**: engines A (subtractive) and B (additive) of the
 [Wavelet Synthesizer](https://github.com/PierreArnaudGUYOT/Free-Wavelet-Synthesizer-VST) by Pierre Arnaud GUYOT
-(OktoPierre), rewritten in fixed point for the FM-1's processor, with 69 of its presets.
+(OktoPierre), rewritten in fixed point for the FM-1's processor, with both engines of the Wavelet Synthesizer (A and B) and 108 of its presets.
 
 One cycle of a source wave is split by a discrete wavelet transform (Haar, Daubechies 2 to 20, a symlet, a coiflet)
 into nine bands of atoms, the smallest atoms can be dropped (SPARSITY), and the bands are played through a scale
@@ -43,8 +43,8 @@ and MIDI-learn guards (`favorites.c`, `midi_learn.c`), the version string, packa
 
 ```sh
 mkdir -p build/host
-python3 firmware/engines/tools/gen_engine_tables.py build/host/fe_tables.h
-cc -O2 -std=gnu99 -I build/host -o build/host/wavelet_test tests/wavelet_test.c
+python3 tools/gen_tables.py build/host/felucca_tables.h
+cc -O2 -std=gnu99 -I build/host -o build/host/wavelet_test tests/wavelet_test.c -lm
 build/host/wavelet_test build/host
 node tools/wavelet_ref.js build/host
 ```

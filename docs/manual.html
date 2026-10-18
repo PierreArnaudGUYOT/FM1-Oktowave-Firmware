@@ -42,7 +42,7 @@
 <p>OKTOWAVE is an alternative firmware for the M-VAVE FM-1 pocket synthesizer: Hügelton Instruments'
 <a href="https://github.com/hugelton/Felucca">Felucca</a> 1.6.1 with one more synthesis engine, <b>WAVELET</b>, the
 subtractive engine of the <a href="https://github.com/PierreArnaudGUYOT/Free-Wavelet-Synthesizer-VST">Wavelet
-Synthesizer</a> by Pierre Arnaud GUYOT (OktoPierre), rewritten for the FM-1's processor, with 69 of its presets.
+Synthesizer</a> by Pierre Arnaud GUYOT (OktoPierre), rewritten for the FM-1's processor: both of its engines (A, subtractive, and B, additive) and 108 of its presets, all of OktoPierre's TOP Sounds among them.
 Everything else is Felucca: four tracks, its thirteen engines, the sequencer, arpeggiator, chords, effects, USB
 audio and MIDI. This manual covers what OKTOWAVE adds; for the rest, Felucca's
 <a href="https://github.com/hugelton/Felucca/wiki/Home">wiki</a> is the reference.</p>
@@ -108,7 +108,8 @@ The new patterns are in SAVE &rsaquo; PHRASES for any track.</p>
 <li><b>The four knobs on HOME</b> (<kbd>HOME</kbd>): for a WAVELET sound they are <code>CUT</code> (the
 cutoff), <code>RES</code> (resonance), <code>SPRS</code> (sparsity) and <code>REL</code> (release).</li>
 <li><b>All eight engine parameters</b>: <kbd>EDIT</kbd> opens the page <b>ATOMS</b> (WAVE, WVLT, PHAS or
-WDTH, SPRS); <kbd>EDIT</kbd> again opens <b>SCALE</b> (CUT, RES, FLT, WNDW). Each knob is one parameter.</li>
+WDTH, SPRS); <kbd>EDIT</kbd> again opens <b>SCALE</b> (CUT, RES, FLT, WNDW). Each knob is one parameter. With WAVE on one of the
+six engine-B patterns (RAMP .. RAND) the knobs read BARS and TILT instead of PHAS and SPRS, and FADE instead of WNDW (section 5).</li>
 <li><b>Envelope, LFO, voices, effects</b>: the <kbd>ENV</kbd>, <kbd>LFO</kbd>, <kbd>EDIT</kbd> (VOICE pages) and
 <kbd>FX</kbd> buttons, as for every Felucca engine (section 6).</li>
 <li><b>Save</b>: <kbd>SAVE</kbd> (USER page) stores the sound in one of 32 user slots; projects keep the four
@@ -134,16 +135,25 @@ small details first, then its shape, down to one atom. <b>PHASE</b> shifts the s
 the transform: the transform is not shift-invariant, so the same wave gives other atoms, and another timbre.
 The <b>window</b> (WNDW) cross-fades, inside a raised-cosine bump that covers half the cycle, between the dry
 cycle and the filtered one; SHAPE (the envelope's and the LFO's SHP amounts) moves the bump round the cycle.</p>
+<p><b>Engine B</b>, the additive one, is the same engine with its atoms set by a <i>pattern</i> instead of a source wave (WAVE 6 to 11:
+RAMP, MIRR, ALT, WALS, IMPL, RAND): every atom of a band at the same level (RAMP), the first half up and the second half down
+(MIRR), up or down by band (ALT), alternating by atom (WALS), the first atom of each band only (IMPL), random (RAND). Each band's
+layer is scaled to the same peak; what shapes the sound is the gain of each band: a <b>registration</b> (BARS: one of 16 sets of nine
+levels, like an organ's drawbars), a <b>tilt</b> (TILT: how much each band is below the one under it) and a <b>scale envelope</b> that
+swells with the amp attack and, with FADE, lets the upper bands fall to half faster than the lower ones. The cutoff, the resonance
+and the filter type act on the bands as in engine A. There is no sparsity, no window and no phase in engine B.</p>
 <p>Everything runs in fixed point, with no floating point: the tables are 16-bit, the gains 10-bit fractions, the
 transforms 20-bit samples with 28-bit coefficients. A WAVELET voice costs about twice an ANALOG voice (measured on a
-computer, 1.6 to 2.3 times; not yet measured on the FM-1), a little more while a new table fades in. The two cores share
+computer, 1.6 to 2.3 times; not yet measured on the FM-1), a little more while a new table fades in. So that a part never costs more than
+the FM-1 does for ANALOG's eight voices, <b>a WAVELET part plays at most four voices</b> (POLY and UNISON; the oldest note is taken first).
+Bands that are filtered out or beyond the pitch's limit are skipped in the sum. The two cores share
 the parts as for every engine; the table builds run on the first core, a slice at a time.</p>
 
 <h2 id="params">5. The parameters</h2>
 <table>
 <thead><tr><th>Page · knob</th><th>Name</th><th>Values</th><th>What it does</th></tr></thead>
 <tbody>
-<tr><td>ATOMS · 1</td><td><code>WAVE</code></td><td>SAW SQR PLS TRI SIN NOIS</td><td>The source cycle. NOIS is a loop of 512 random samples: at a pitch it is a buzzy, periodic noise.</td></tr>
+<tr><td>ATOMS · 1</td><td><code>WAVE</code></td><td>SAW SQR PLS TRI SIN NOIS · RAMP MIRR ALT WALS IMPL RAND</td><td>The source cycle (engine A: the first six; NOIS is a loop of 512 random samples, a buzzy, periodic noise) or the pattern of the atoms (engine B: the last six, section 4).</td></tr>
 <tr><td>ATOMS · 2</td><td><code>WVLT</code></td><td>HAAR DB2 DB4 DB8 SYM8 COIF3 DB20</td><td>The wavelet: the atoms' shape. HAAR = steps (chip-like, bright); DB4 (the default) and DB8 = the all-rounders; SYM8, COIF3 = smoother, more symmetric; DB20 = nearly sines (the filter then works almost like a harmonic filter).</td></tr>
 <tr><td>ATOMS · 3</td><td><code>PHAS</code></td><td>0 .. 100 %</td><td>The source's phase: where the cycle starts, in 128ths of a cycle. 0 is the Wavelet Synthesizer's sound; other values give other atoms, often a brighter or hollower version of the same wave. Hear it best with HAAR or DB2.</td></tr>
 <tr><td>ATOMS · 3</td><td><code>WDTH</code></td><td>0 .. 100 %</td><td>On PLS and TRI the knob is the pulse width / the triangle's rising part, 2 to 98 % of the cycle (50 % = square / symmetric triangle). These two waves have no phase knob.</td></tr>
@@ -151,7 +161,10 @@ the parts as for every engine; the table builds run on the first core, a slice a
 <tr><td>SCALE · 1</td><td><code>CUT</code></td><td>0 .. 127</td><td>The cutoff, in bands: 127 is band 12, fully open; 64 is band 6 (harmonics 16 to 32); 0 is below the fundamental. The envelope's and LFO's FLT amounts move it by up to ±12 bands.</td></tr>
 <tr><td>SCALE · 2</td><td><code>RES</code></td><td>0 .. 100 %</td><td>Resonance: a boost of up to 24 dB of the band at the cutoff (and a little of its neighbours).</td></tr>
 <tr><td>SCALE · 3</td><td><code>FLT</code></td><td>LP12 .. LP96, HP12 .. HP96, BP12 .. BP96</td><td>The filter's type and slope: low-pass, high-pass or band-pass, 12 18 24 36 48 or 96 dB per band (24 = the VST's default). The slope is per band, that is per octave of atoms: LP24 is gentle, LP96 is a wall.</td></tr>
-<tr><td>SCALE · 4</td><td><code>WNDW</code></td><td>0 .. 100 %</td><td>The window's depth: 0 = the filtered sound everywhere; 100 % = the dry cycle outside the window and the filtered one inside it. In between, a mix. The window is half a cycle wide; its place is SHAPE (section 6).</td></tr>
+<tr><td>SCALE · 4</td><td><code>WNDW</code></td><td>0 .. 100 %</td><td>The window's depth: 0 = the filtered sound everywhere; 100 % = the dry cycle outside the window and the filtered one inside it. In between, a mix. The window is half a cycle wide; its place is SHAPE (section 6). Engine A only.</td></tr>
+<tr><td>ATOMS · 3</td><td><code>BARS</code></td><td>0 .. 127</td><td><b>Engine B.</b> The registration: one of 16 sets of nine levels, <code>BARS / 8</code>. 0 = all bands at the same level (the buzziest), then the sets the presets use: organ-like (a few strong low bands), flute (the first three bands), choir (all bands), bell (gaps) and so on.</td></tr>
+<tr><td>ATOMS · 4</td><td><code>TILT</code></td><td>0 .. 100 %</td><td><b>Engine B.</b> How much each band is below the one under it: 0 = none, 100 % = 24 dB per band (only the fundamental is left).</td></tr>
+<tr><td>SCALE · 4</td><td><code>FADE</code></td><td>0 .. 100 %</td><td><b>Engine B.</b> 0 = no fade. Higher: the upper bands fall to half, the faster the higher the band (at 100 % the top band in a millisecond, the lowest in ten seconds). The sound swells over the amp ATK first.</td></tr>
 </tbody>
 </table>
 <p>The values 0 .. 127 of the knobs are what Felucca's editor and the SysEx protocol see (engine values
@@ -185,7 +198,8 @@ window and its position. What is reduced or left out:</p>
 <thead><tr><th>In the VST</th><th>On the FM-1</th></tr></thead>
 <tbody>
 <tr><td>2048-sample cycle, 11 bands, 11 band-limited mip levels per layer</td><td>512-sample cycle, 9 bands (harmonics 1 .. 256; the VST's bands 10 and 11 would be above 10 kHz on any note above 40 Hz). <b>Anti-aliasing is much weaker than in the VST.</b> There are no mip levels: a band whose harmonics would pass Nyquist is faded out, one octave coarse, and the dry cycle under the window is gated the same way. The wavelet layers themselves are not band-limited, so edgy waves (SAW and PLS with HAAR or DB2) alias audibly on high notes: measured on a computer, the energy off the harmonics is about 30 dB under the harmonics at C3 and 10 to 16 dB under at C6 to C8 (ANALOG's saw: 48 down to 34 dB). Smoother wavelets (DB4 and up) and lower cutoffs are cleaner. A per-pitch table is the planned fix.</td></tr>
-<tr><td>Engine B (additive), A/B MIX, WAVELET MORPH, LFO 2, SOURCE PHASE moved by LFO 2, the sub oscillator, unison inside the voice, the chorus / delay / reverb / limiter of the plug-in</td><td>Not there. Felucca's own LFO, matrix, UNISON voice mode and effects replace what they can. The presets of the VST's "Source Phase" section that needed LFO 2 (the "Shift" sounds) are left out; the static ones are in.</td></tr>
+<tr><td>A/B MIX, WAVELET MORPH, LFO 2, SOURCE PHASE moved by LFO 2, the sub oscillator, unison inside the voice, the chorus / delay / reverb / limiter of the plug-in</td><td>Not there: a sound is engine A or engine B, not both. Felucca's own LFO, matrix, UNISON voice mode and effects replace what they can. The presets of the VST's "Source Phase" section that needed LFO 2 (the "Shift" sounds) are left out; the static ones are in.</td></tr>
+<tr><td>Engine B: 11 drawbars, TILT +12 .. −24 dB, its own attack, spread, body, bright and sustain, 100 random seeds</td><td>Nine bands. BARS picks the <b>nearest of 16 registrations</b>, built from the drawbar sets the presets use (bands 10 and 11 dropped): a preset with an unusual set is approximated. TILT is −24 .. 0 dB per band (the few positive tilts become flat). The scale envelope swells over the amp ATK (the slower of the VST's and the amp's attack is kept in the presets, the attack spread is lost) and falls to half with FADE; the VST's body, bright and sustain are one parameter. The random pattern has the seed 1. The window and its position (a few presets: Focus Sweep) are lost.</td></tr>
 <tr><td>KEY TRK 0 .. 100 %, VEL AMT, the window's WIDTH, POSITION knob, a separate filter envelope</td><td>Key tracking is 100 %, the window is a quarter-cycle each side of its centre (above about 1.4 kHz it narrows by half, abruptly), its centre starts at the cycle's start (the VST's POSITION 0) and moves with the SHP amounts, the filter envelope is the amp envelope (ENV DEST FLT). Velocity reaches the cutoff through the MOD matrix. The presets that used POSITION, the window's width or its LFO (a handful) differ from the VST's.</td></tr>
 <tr><td>SLOPE 6 .. 96 dB/band, any value; band-reject</td><td>Six slopes (12 18 24 36 48 96) and three types; the presets took the nearest slope (no preset used band-reject).</td></tr>
 <tr><td>SPARSITY: K = N<sup>1−s</sup> of the N non-zero atoms of a 2047-atom transform, counted down to 10<sup>−9</sup> of the largest</td><td>N counts the atoms of a 511-atom transform, down to 2<sup>−18</sup> (−108 dB): the same law on fewer atoms, so a VST preset's SPARSITY value keeps fewer atoms here (the sound thins a little earlier).</td></tr>
@@ -195,9 +209,10 @@ window and its position. What is reduced or left out:</p>
 </table>
 
 <h2 id="presets">8. The presets</h2>
-<p>69 of the Wavelet Synthesizer's presets (beta 0.7), engine A only: first the 15 of OktoPierre's 22 TOP Sounds that this engine can play
-(the other seven use the VST's additive engine B, which the FM-1 does not have), then the rest by category (★ = his vote of the
-listening tests). Silk Strings is an A/B preset; here it is its A part. The names are shortened to the FM-1's ten characters; the
+<p>108 of the Wavelet Synthesizer's presets (beta 0.7), engine A or B: first <b>all 22 of OktoPierre's TOP Sounds</b>, best first, then the rest
+by category (★ = his vote of the listening tests). The A/B presets of the VST (two engines mixed) are played as their A part when the mix is
+up to 50 % (Silk Strings, the only one kept) and as their B part above it (Glass Choir, Glass Keys, Wavelet Choir, Wave Atom Choir, Crystal Bell);
+the sounds marked "engine B" use the additive engine. The names are shortened to the FM-1's ten characters; the
 VST's name is beside each. The window's position, width and LFO of a few presets are not carried over (section 7). The sounds that used the VST's unison, sub oscillator, LFO 2 or morph are plainer
 here; UNISON on the VOICE page brings some of it back.</p>
 <table>
@@ -205,15 +220,22 @@ here; UNISON on the VOICE page brings some of it back.</p>
 <tbody>
 <!-- PRESETS -->
 <tr><th colspan="3">TOP Sounds (the Wavelet Synthesizer favourites, best first)</th></tr>
+<tr><td><code>MIRROR SUB</code></td><td>Mirror Sub Bass · engine B</td><td></td></tr>
 <tr><td><code>NOISE WASH</code></td><td>Noise Wash Pad</td><td>★ 9</td></tr>
 <tr><td><code>SIREN SWP</code></td><td>Siren Sweep</td><td>★ 9</td></tr>
+<tr><td><code>THEATRE OR</code></td><td>Theatre Organ · engine B</td><td>★ 9</td></tr>
+<tr><td><code>SPACE CHR</code></td><td>Space Choir · engine B</td><td></td></tr>
 <tr><td><code>WAVLT LEAD</code></td><td>Wavelet Lead</td><td></td></tr>
+<tr><td><code>FOCUS SWP</code></td><td>Focus Sweep · engine B</td><td></td></tr>
+<tr><td><code>FLUTE LEAD</code></td><td>Flute Lead · engine B</td><td>★ 8</td></tr>
+<tr><td><code>CHOIR PAD</code></td><td>Choir Pad · engine B</td><td>★ 8</td></tr>
 <tr><td><code>WAVE BRASS</code></td><td>Wave Brass</td><td>★ 8</td></tr>
 <tr><td><code>WAVE RISER</code></td><td>Wave Riser</td><td>★ 9</td></tr>
 <tr><td><code>WARM PAD</code></td><td>Warm Pad</td><td></td></tr>
 <tr><td><code>ATTACK LD</code></td><td>Wave Attack Lead</td><td>★ 9</td></tr>
 <tr><td><code>DUB ECHO</code></td><td>Dub Echo Lead</td><td></td></tr>
 <tr><td><code>PULSE LEAD</code></td><td>Wave Pulse Lead</td><td>★ 9</td></tr>
+<tr><td><code>GLASS CHR</code></td><td>Glass Choir (its B part) · engine B</td><td>★ 8</td></tr>
 <tr><td><code>CELLOS</code></td><td>Cello Section</td><td>★ 8</td></tr>
 <tr><td><code>SILK STR</code></td><td>Silk Strings (its A part)</td><td>★ 8</td></tr>
 <tr><td><code>SPICCATO</code></td><td>Spiccato Strings</td><td>★ 8</td></tr>
@@ -232,17 +254,37 @@ here; UNISON on the VOICE page brings some of it back.</p>
 <tr><td><code>WHISTLE</code></td><td>Whistle Lead</td><td></td></tr>
 <tr><th colspan="3">Keys</th></tr>
 <tr><td><code>CLEAN KEYS</code></td><td>Clean Keys</td><td></td></tr>
+<tr><td><code>GLASS KEYS</code></td><td>Glass Keys (its B part) · engine B</td><td></td></tr>
 <tr><td><code>TINE PIANO</code></td><td>Tine Piano</td><td></td></tr>
+<tr><td><code>REED PIANO</code></td><td>Reed Piano · engine B</td><td></td></tr>
 <tr><td><code>CLAVI</code></td><td>Clavi</td><td></td></tr>
+<tr><td><code>TOY PIANO</code></td><td>Toy Piano · engine B</td><td></td></tr>
 <tr><td><code>LOFI PIANO</code></td><td>Lo-Fi Piano</td><td></td></tr>
+<tr><th colspan="3">Organ</th></tr>
+<tr><td><code>FULL ORGAN</code></td><td>Full Drawbar Organ · engine B</td><td>★ 7</td></tr>
+<tr><td><code>REED ORGAN</code></td><td>Reed Organ · engine B</td><td></td></tr>
+<tr><td><code>OCT ORGAN</code></td><td>Octave Organ · engine B</td><td></td></tr>
+<tr><td><code>DIST ORGAN</code></td><td>Distorted Organ · engine B</td><td></td></tr>
+<tr><td><code>ENS ORGAN</code></td><td>Ensemble Organ · engine B</td><td></td></tr>
+<tr><td><code>JAZZ ORGAN</code></td><td>Jazz Organ · engine B</td><td></td></tr>
+<tr><td><code>GOSPEL ORG</code></td><td>Gospel Organ · engine B</td><td></td></tr>
+<tr><td><code>CHURCH ORG</code></td><td>Church Organ · engine B</td><td></td></tr>
+<tr><td><code>FLUTE ORG</code></td><td>Flute Organ · engine B</td><td></td></tr>
 <tr><th colspan="3">Pad</th></tr>
 <tr><td><code>CHORUS PAD</code></td><td>Poly Chorus Pad</td><td></td></tr>
+<tr><td><code>RAND GLASS</code></td><td>Random Glass · engine B</td><td></td></tr>
+<tr><td><code>WAVLT CHR</code></td><td>Wavelet Choir (its B part) · engine B</td><td></td></tr>
 <tr><td><code>BRASS PAD</code></td><td>Analog Brass Pad</td><td>★ 7</td></tr>
+<tr><td><code>MIRROR PAD</code></td><td>Mirror Pad · engine B</td><td></td></tr>
 <tr><td><code>MORPH PAD</code></td><td>Wave Morph Pad</td><td>★ 7</td></tr>
 <tr><td><code>GLASS PAD</code></td><td>Glass Pad</td><td></td></tr>
 <tr><td><code>SWEEP PAD</code></td><td>Sweep Pad</td><td>★ 7</td></tr>
+<tr><td><code>ATOM CHOIR</code></td><td>Wave Atom Choir (its B part) · engine B</td><td>★ 7</td></tr>
+<tr><td><code>GLASS ENS</code></td><td>Glass Ensemble · engine B</td><td></td></tr>
 <tr><td><code>ANALOG PAD</code></td><td>Analog Pad</td><td></td></tr>
+<tr><td><code>HALO PAD</code></td><td>Halo Pad · engine B</td><td></td></tr>
 <tr><th colspan="3">Strings</th></tr>
+<tr><td><code>VOX STRNGS</code></td><td>Vox Strings · engine B</td><td>★ 7</td></tr>
 <tr><td><code>STRING MCH</code></td><td>String Machine</td><td></td></tr>
 <tr><td><code>ENSEMBLE</code></td><td>Ensemble Strings</td><td>★ 7</td></tr>
 <tr><td><code>TREMOLO ST</code></td><td>Wave Tremolo Strings</td><td>★ 7</td></tr>
@@ -252,23 +294,37 @@ here; UNISON on the VOICE page brings some of it back.</p>
 <tr><th colspan="3">Brass & Wind</th></tr>
 <tr><td><code>FR HORN</code></td><td>French Horn</td><td>★ 7</td></tr>
 <tr><td><code>NOISE BRS</code></td><td>Noise Brass</td><td></td></tr>
+<tr><td><code>CHRS FLUTE</code></td><td>Chorus Flute · engine B</td><td></td></tr>
 <tr><td><code>BRASS STAB</code></td><td>Brass Section Stab</td><td>★ 7</td></tr>
+<tr><td><code>REED CLAR</code></td><td>Clarinet · engine B</td><td></td></tr>
 <tr><th colspan="3">Pluck</th></tr>
 <tr><td><code>STEEL PLCK</code></td><td>Steel Pluck</td><td>★ 7</td></tr>
 <tr><td><code>HARP</code></td><td>Harp</td><td></td></tr>
 <tr><td><code>SYN PLUCK</code></td><td>Synth Pluck</td><td></td></tr>
+<tr><th colspan="3">Bells & Mallets</th></tr>
+<tr><td><code>XYLOPHONE</code></td><td>Xylophone · engine B</td><td>★ 7</td></tr>
+<tr><td><code>MUSIC BOX</code></td><td>Music Box · engine B</td><td></td></tr>
+<tr><td><code>GLOCKEN</code></td><td>Glockenspiel · engine B</td><td></td></tr>
+<tr><td><code>VIBES</code></td><td>Vibraphone · engine B</td><td></td></tr>
+<tr><td><code>MARIMBA</code></td><td>Marimba · engine B</td><td></td></tr>
+<tr><td><code>TUBE BELLS</code></td><td>Tubular Bells · engine B</td><td></td></tr>
+<tr><td><code>CRYST BELL</code></td><td>Crystal Bell (its B part) · engine B</td><td></td></tr>
 <tr><th colspan="3">FX</th></tr>
 <tr><td><code>UFO</code></td><td>UFO</td><td>★ 7</td></tr>
+<tr><td><code>ALIEN TXT</code></td><td>Alien Texture · engine B</td><td></td></tr>
 <tr><td><code>ATOM SCAN</code></td><td>Wave Atom Scanner</td><td>★ 7</td></tr>
 <tr><td><code>WIND</code></td><td>Wind</td><td></td></tr>
+<tr><td><code>SCIFI BRBL</code></td><td>Sci-Fi Burble · engine B</td><td></td></tr>
 <tr><td><code>ALARM</code></td><td>Alarm</td><td></td></tr>
 <tr><th colspan="3">Drums & Perc</th></tr>
 <tr><td><code>NOISE SNR</code></td><td>Noise Snare</td><td></td></tr>
 <tr><td><code>CLOSED HAT</code></td><td>Closed Hat</td><td></td></tr>
 <tr><td><code>OPEN HAT</code></td><td>Open Hat</td><td></td></tr>
+<tr><td><code>WOOD BLOCK</code></td><td>Wood Block · engine B</td><td></td></tr>
 <tr><td><code>SYNTH TOM</code></td><td>Synth Tom</td><td></td></tr>
 <tr><th colspan="3">Init</th></tr>
 <tr><td><code>INIT</code></td><td>Init</td><td></td></tr>
+<tr><td><code>INIT B</code></td><td>Init · engine B</td><td></td></tr>
 <tr><th colspan="3">Source Phase</th></tr>
 <tr><td><code>WINDOW LD</code></td><td>Window Phase Lead</td><td></td></tr>
 <tr><td><code>CLARINET</code></td><td>Phase Clarinet</td><td></td></tr>
@@ -298,6 +354,7 @@ any wave into a lighter, hollow version of itself; high values leave a few atoms
 With NOIS, sparsity + a resonant band-pass = glassy, bell-like noises.</li>
 <li><b>Phase is cheap variation.</b> Two tracks with the same preset and different PHAS values do not sound
 alike: good for a two-layer pad.</li>
+<li><b>Engine B for organs, choirs and bells.</b> Start from a registration (BARS), then TILT: flat is buzzy, −10 to −25 % is an organ, more is a flute; RAMP is the bright one, MIRR a hollow one (even bands cancel), IMPL a pulse train, RAND a noisy, metallic one. FADE with a low cutoff makes plucks and bells.</li>
 <li><b>The window as a phaser.</b> WNDW 100 %, LFO DEST SHP at half, a slow LFO: the filtered part of the
 cycle sweeps round, a slow phase-like motion that follows the pitch.</li>
 <li><b>Brass and plucks</b>: ENV DEST FLT positive with a quick decay; <b>pads</b>: slow attack, DB8 or
@@ -314,8 +371,8 @@ Apache-2.0 AC79 SDK; Python with Pillow and fontTools). The repository's GitHub 
 on a Linux runner and publishes the package, the test results, the browser build and this manual.</p>
 <p>The engine alone needs only a C compiler and Node.js:</p>
 <pre>mkdir -p build/host
-python3 firmware/engines/tools/gen_engine_tables.py build/host/fe_tables.h
-cc -O2 -std=gnu99 -I build/host -o build/host/wavelet_test tests/wavelet_test.c
+python3 tools/gen_tables.py build/host/felucca_tables.h
+cc -O2 -std=gnu99 -I build/host -o build/host/wavelet_test tests/wavelet_test.c -lm
 build/host/wavelet_test build/host     # every wave x wavelet, the presets (writes preset_NN.wav), the cross-fade, the anti-aliasing
 node tools/wavelet_ref.js build/host   # the fixed-point tables against the floating-point reference</pre>
 

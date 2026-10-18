@@ -13,13 +13,20 @@
  * frequencies. The WNDW cross-fades the filtered sum with the DRY cycle inside a raised-cosine window
  * (SHAPE sets where in the cycle: the LFO and the envelope move it).
  *
- * What the FM-1 version leaves out (the VST / web app has it): the second engine (additive), wavelet
- * morphing, LFO 2, the sub oscillator, key tracking below 100 %, the filter's velocity amount and the
- * window's width (fixed at half a cycle). The cutoff is in bands (0 .. 12), so the timbre follows the
- * key (the original's KEY TRK at 100 %).
+ * ENGINE B (the additive one) is a mode of this engine: WAVE 6 .. 11 (RAMP MIRR ALT WALS IMPL RAND) set the atoms
+ * from a pattern instead of a source wave (no forward transform, no sparsity); each band's layer is peak-normalised,
+ * and a voice's gain per band is  registration x tilt x scale envelope x filter / norm: BARS picks one of 16
+ * registrations of the nine bands (the VST's drawbars), TILT is the dB per band, the scale envelope swells over the
+ * amp ATK and, with FADE, the upper bands fall to half faster than the lower ones. In that mode EDIT 1 / 2 read
+ * WAVE WVLT BARS TILT / CUT RES FLT FADE.
+ *
+ * What the FM-1 version leaves out (the VST / web app has it): wavelet morphing, LFO 2, the sub oscillator, key
+ * tracking below 100 %, the filter's velocity amount, the window's width (fixed at half a cycle), engine B's
+ * separate scale attack, spread and sustain and its own random seeds, the A/B mix (a sound is A or B). The cutoff
+ * is in bands (0 .. 12), so the timbre follows the key (the original's KEY TRK at 100 %).
  *
  * Parameters (EDIT 1: WAVE WVLT PHAS/WDTH SPRS; EDIT 2: CUT RES FLT WNDW):
- *   E0 WAVE   SAW SQR PLS TRI SIN NOIS
+ *   E0 WAVE   SAW SQR PLS TRI SIN NOIS | engine B: RAMP MIRR ALT WALS IMPL RAND
  *   E1 WVLT   HAAR DB2 DB4 DB8 SYM8 COIF3 DB20 (the wavelet: Daubechies, symlets, coiflets)
  *   E2 PHAS   the source's phase, 0 .. 127 = 0 .. 127/128 of a cycle (the DWT is shift-variant: the same wave
  *             shifted gives other atoms, so another timbre); on PLS and TRI it is WDTH, the pulse width /
@@ -49,6 +56,7 @@
  * one band; the layers of a peak-normalised cycle stay near 1.0). */
 
 #include "wavelet_tables.h"
+#include "wavelet_presets.h"                            /* WAVELET_PRESETS, WAV_REG (tools/gen_wavelet_presets.js) */
 
 #define WAV_N 512u                                  /* samples per cycle */
 #define WAV_LOG2N 9u
@@ -62,17 +70,20 @@
 #endif
 #define WAV_GMAX 16384                              /* +24 dB in Q10 */
 
-static const char *const N_WWAVE[] = {"SAW", "SQR", "PLS", "TRI", "SIN", "NOIS"};
+static const char *const N_WWAVE[] = {"SAW", "SQR", "PLS", "TRI", "SIN", "NOIS", "RAMP", "MIRR", "ALT", "WALS", "IMPL", "RAND"};
 static const char *const N_WFLT[] = {"LP12", "LP18", "LP24", "LP36", "LP48", "LP96",
                                      "HP12", "HP18", "HP24", "HP36", "HP48", "HP96",
                                      "BP12", "BP18", "BP24", "BP36", "BP48", "BP96"};
 static const uint8_t WAV_SLOPE[6] = {12, 18, 24, 36, 48, 96};
-enum { WW_SAW, WW_SQR, WW_PLS, WW_TRI, WW_SIN, WW_NOIS };
+enum { WW_SAW, WW_SQR, WW_PLS, WW_TRI, WW_SIN, WW_NOIS, WW_B0 };   /* WW_B0 and up: engine B (patterns 0 .. 5) */
+#define WAV_IS_B(w) ((uint32_t)(w) >= WW_B0)
 
 /* ------------------------------------------------------ the part's state --- */
 typedef struct {
     int16_t t[WAV_TSIZE];                           /* the table: row i = the layers at sample i, Q14 */
     int16_t g0[NVOICE][WAV_NB];                     /* each voice's band gains at the end of its last block, Q10 */
+    uint16_t lv[NVOICE][WAV_NB];                    /* engine B: each voice's scale envelope per band, Q15 */
+    uint8_t atk[NVOICE];                            /* engine B: 1 while the scale envelope swells (the same for every band) */
 } wav_part_t;
 /* what says whether t[] is the table of the part's sound lives outside the engine memory (another engine may use
  * that region while the part plays it, and a visit of ANALOG, which has no memory of its own, must not leave an old
@@ -230,15 +241,57 @@ static void wav_sparsify(wav_scratch_t *s)
     }
 }
 
-/* the layer in s->x / s->a (the level's output, Q20) into column `band` of the table, and into DRY */
+/* engine B's atoms into s->c (Q20): band b (1 .. 9) holds 2^(b-1) atoms, as the Wavelet Synthesizer's patternCoeffs writes them
+ * (Ramp all +1, Mirror +1 then -1 in each band, Alternate by band, Walsh by atom, Impulse the first atom, Random with the seed 1) */
+static void wav_pattern(wav_scratch_t *s)
+{
+    int32_t *c = s->c;
+    uint32_t pat = (uint32_t)s->snap[0] - WW_B0, b, k, i, r = 2654435761u + 12345u;   /* rng((1 x 2654435761 + 12345) >>> 0) */
+    for (i = 0; i < WAV_N; i++)
+        c[i] = 0;
+    for (b = 1; b <= WAV_NB; b++) {
+        uint32_t n = 1u << (b - 1u);
+        for (k = 0; k < n; k++) {
+            int32_t v;
+            switch (pat) {
+            case 0: v = 1 << 20; break;
+            case 1: v = b == 1u ? 1 << 20 : (k < n / 2u ? 1 << 20 : -(1 << 20)); break;
+            case 2: v = (b & 1u) ? 1 << 20 : -(1 << 20); break;
+            case 3: v = (k & 1u) ? -(1 << 20) : 1 << 20; break;
+            case 4: v = k == 0u ? 1 << 20 : 0; break;
+            default:
+                r = r * 1664525u + 1013904223u;
+                v = (int32_t)(r >> 11) - (1 << 20);
+                break;
+            }
+            c[n + k] = v;
+        }
+    }
+}
+
+/* the layer in s->x / s->a (the level's output, Q20) into column `band` of the table, and into DRY. Engine B: every layer is
+ * scaled to a peak of 1.0 (16384), as the Wavelet Synthesizer does, so that the registration sets the balance of the bands */
 static void wav_layer_out(wav_scratch_t *s, const int32_t *lay)
 {
     uint32_t i;
+    int64_t recip = 0;
+    if (WAV_IS_B(s->snap[0])) {
+        int32_t peak = 0;
+        for (i = 0; i < WAV_N; i++) {
+            int32_t a = lay[i] < 0 ? -lay[i] : lay[i];
+            if (a > peak)
+                peak = a;
+        }
+        if (peak > 0)
+            recip = (int64_t)(((uint64_t)16384u << 32) / (uint64_t)peak);
+    }
     for (i = 0; i < WAV_N; i++) {
-        int32_t v = wav_sat16((lay[i] + 32) >> 6);
+        int32_t v = recip ? (int32_t)(((int64_t)lay[i] * recip + ((int64_t)1 << 31)) >> 32) : wav_sat16((lay[i] + 32) >> 6);
+        v = wav_sat16(v);
         int16_t *row = s->t + i * WAV_NL;
         row[s->band] = (int16_t)v;
-        row[WAV_DRY] = (int16_t)wav_sat16(row[WAV_DRY] + v);
+        if (!WAV_IS_B(s->snap[0]))                      /* (engine B has no dry cycle: its DRY layer stays 0) */
+            row[WAV_DRY] = (int16_t)wav_sat16(row[WAV_DRY] + v);
     }
 }
 
@@ -261,6 +314,12 @@ static __attribute__((noinline)) void wav_build_step(wav_scratch_t *s, int32_t b
         case WS_SRC:
             for (i = 0; i < WAV_TSIZE; i++)
                 s->t[i] = 0;
+            if (WAV_IS_B(s->snap[0])) {                 /* engine B: the atoms are a pattern, no transform, no sparsity */
+                wav_pattern(s);
+                s->stage = WS_SPARSE;
+                budget -= 1024;
+                break;
+            }
             wav_source(s);
             s->stage = WS_DWT;
             s->M = (uint16_t)WAV_N;
@@ -294,7 +353,8 @@ static __attribute__((noinline)) void wav_build_step(wav_scratch_t *s, int32_t b
             break;
         }
         case WS_SPARSE:
-            wav_sparsify(s);
+            if (!WAV_IS_B(s->snap[0]))
+                wav_sparsify(s);
             s->stage = WS_BANDA;
             s->band = 0;
             s->M = 2;
@@ -433,26 +493,107 @@ static void wav_gains(const int16_t *p, int32_t cutq8, uint32_t inc, int32_t *g,
     }
 }
 
+/* 10^(dB / 20) in Q10 for dB (Q8) from -120 .. +72: engine B's tilt reaches +8 bands x ... (the plain one stops at +24 dB) */
+static int32_t wav_db_to_q10w(int32_t dbq8)
+{
+    int32_t o = (int32_t)(((int64_t)dbq8 * 10886) >> 16);   /* octaves Q8 */
+    int32_t n = o >> 8, f = o & 255;
+    uint32_t p = WAV_POW2[f >> 2] + (((WAV_POW2[(f >> 2) + 1] - WAV_POW2[f >> 2]) * (uint32_t)(f & 3)) >> 2);   /* Q14 */
+    if (n < -20)
+        return 0;
+    if (n > 12)
+        n = 12;
+    return n >= 4 ? (int32_t)(p << (uint32_t)(n - 4)) : (int32_t)(p >> (uint32_t)(4 - n));
+}
+
+/* engine B: the gain of each band of a voice, from the filter's gains g (in) to the final ones (out), Q10.
+ *   bar_j  = registration_j x tilt^j       TILT: 0 .. -24 dB per band over E3 0 .. 127
+ *   norm   = max(1, sum of bar)            (as the VST: the sum of the bars, never boosting)
+ *   gain_j = filter_j x bar_j / norm x lv_j  the scale envelope lv_j: it swells with the amp ATK, then, with FADE (E7 > 0),
+ *            falls to half the faster the higher the band (E7 127: the top band in a millisecond, the lowest in 10 s) */
+static void wav_bscale(const int16_t *p, wav_part_t *ps, uint32_t vi, int32_t *g)
+{
+    const uint16_t *reg = WAV_REG[(uint32_t)clamp(p[P_E2], 0, 127) >> 3];
+    int32_t tilt_q8 = (int32_t)(-(int64_t)clamp(p[P_E3], 0, 127) * 24 * 256 / 127);   /* dB per band, Q8 */
+    int32_t fade = clamp(p[P_E7], 0, 127), idx7 = 127 - fade;
+    int64_t bar[WAV_NB], sum = 0, norm;
+    uint16_t *lv = ps->lv[vi];
+    uint32_t j;
+    for (j = 0; j < WAV_NB; j++) {
+        bar[j] = ((int64_t)reg[j] * wav_db_to_q10w(tilt_q8 * (int32_t)j)) >> 10;
+        sum += bar[j];
+    }
+    norm = sum > 1024 ? sum : 1024;
+    if (ps->atk[vi]) {                                  /* the swell: every band the same, over the amp attack */
+        int32_t step = (int32_t)(ENV_LIN[clamp(p[P_ATK], 0, 127)] >> 9) + 1;
+        int32_t l = (int32_t)lv[0] + step;
+        if (l >= 32767) {
+            l = 32767;
+            ps->atk[vi] = 0;
+        }
+        for (j = 0; j < WAV_NB; j++)
+            lv[j] = (uint16_t)l;
+    } else if (fade > 0) {                              /* the fall to half, a time per band: idx7 at the top, 127 at the bottom */
+        for (j = 0; j < WAV_NB; j++) {
+            int32_t idx = idx7 + ((127 - idx7) * (int32_t)(WAV_NB - 1u - j)) / (int32_t)(WAV_NB - 1u);
+            int32_t l = (int32_t)lv[j];
+            l += (int32_t)(((int64_t)(16384 - l) * ENV_EXP[clamp(idx, 0, 127)]) >> 16);
+            lv[j] = (uint16_t)clamp(l, 0, 32767);
+        }
+    }
+    for (j = 0; j < WAV_NB; j++)
+        g[j] = (int32_t)(((int64_t)g[j] * bar[j] / norm * (int64_t)lv[j]) >> 15);
+}
+
 /* ------------------------------------------------------------- voices --- */
 static void wavelet_note_on(track_t *t, voice_t *v)
 {
-    (void)t;
+    wav_part_t *ps = WAV_PART(t);
+    uint32_t vi = (uint32_t)(v - t->v) % NVOICE, j;
     v->s[0] = 0;                                        /* the gains start where this block puts them */
+    ps->atk[vi] = 1;                                    /* engine B: the scale envelope swells again */
+    for (j = 0; j < WAV_NB; j++)
+        ps->lv[vi][j] = 0;
 }
 
 static const param_desc_t WAVELET_WIDTH = {"WDTH", F_PCT, 0, 127, 0, 0, 0};
+static const param_desc_t WAVELET_BARS = {"BARS", F_INT, 0, 127, 0, 0, 0};   /* engine B: the registration, E2 / 8 (0 .. 15) */
+static const param_desc_t WAVELET_TILT = {"TILT", F_PCT, 0, 127, 0, 0, 0};   /* .. 0 = flat, 127 = -24 dB per band */
+static const param_desc_t WAVELET_FADE = {"FADE", F_PCT, 0, 127, 0, 0, 0};   /* .. 0 = none */
 static const param_desc_t *wavelet_desc(const track_t *t, uint32_t k)
 {
+    if (WAV_IS_B(t->p[P_E0]))
+        return k == 2u ? &WAVELET_BARS : k == 3u ? &WAVELET_TILT : k == 7u ? &WAVELET_FADE : 0;
     if (k == 2u && (t->p[P_E0] == WW_PLS || t->p[P_E0] == WW_TRI))
         return &WAVELET_WIDTH;
     return 0;
 }
 
-/* a row of the table x the band gains g (Q10): Q24 */
-static inline int32_t wav_row(const int16_t *r, const int32_t *g)
+/* the bands that sound (gain not 0): the row sums skip the others, which is exact (a band of gain 0 adds 0); a band is also
+ * dropped from the list while its gain is 0 at both ends of the ramp. Many sounds have bands filtered out or gated by the pitch */
+typedef struct { int32_t g[WAV_NB]; uint8_t act[WAV_NB]; uint8_t n; } wav_gs_t;
+static void wav_gs_set(wav_gs_t *a, const int32_t *g)
 {
-    return g[0] * r[0] + g[1] * r[1] + g[2] * r[2] + g[3] * r[3] + g[4] * r[4] + g[5] * r[5] + g[6] * r[6] +
-           g[7] * r[7] + g[8] * r[8];
+    uint32_t j;
+    a->n = 0;
+    for (j = 0; j < WAV_NB; j++) {
+        a->g[j] = g[j];
+        if (g[j])
+            a->act[a->n++] = (uint8_t)j;
+    }
+}
+/* a row of the table x the band gains (Q10): Q24 */
+static inline int32_t wav_row(const int16_t *r, const wav_gs_t *a)
+{
+    const int32_t *g = a->g;
+    uint32_t k;
+    int32_t s;
+    if (a->n == WAV_NB)
+        return g[0] * r[0] + g[1] * r[1] + g[2] * r[2] + g[3] * r[3] + g[4] * r[4] + g[5] * r[5] + g[6] * r[6] +
+               g[7] * r[7] + g[8] * r[8];
+    for (s = 0, k = 0; k < a->n; k++)
+        s += g[a->act[k]] * r[a->act[k]];
+    return s;
 }
 typedef struct { uint32_t i; int32_t s0, s1; } wav_rd_t;   /* the rows last summed: row i and i + 1 */
 #define WAV_RD_NONE 0x7FFFFFFFu                          /* no rows summed (its + 1 is no row either) */
@@ -461,7 +602,7 @@ typedef struct { uint32_t i; int32_t s0, s1; } wav_rd_t;   /* the rows last summ
  * are summed once: a sample on the same rows as the last one (below 86 Hz) or one row on (up to 172 Hz) reuses what
  * was summed (c), so the nine multiplies run once or twice a sample, not twice always. Called with the filter's
  * gains for the sound and, under the window, with the anti-aliasing gate alone for the dry cycle */
-static inline int32_t wav_read(const int16_t *T, uint32_t ph, const int32_t *g, wav_rd_t *c)
+static inline int32_t wav_read(const int16_t *T, uint32_t ph, const wav_gs_t *g, wav_rd_t *c)
 {
     uint32_t i = ph >> (32u - WAV_LOG2N);
     const int16_t *r = T + i * WAV_NL, *r1 = r + WAV_NL;
@@ -486,9 +627,10 @@ static void wavelet_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
     const int16_t *p = t->p;
     const int16_t *T = ps->t, *T2 = 0;
     int16_t *g0 = ps->g0[(uint32_t)(v - t->v) % NVOICE];
-    int32_t g1[WAV_NB], g[WAV_NB], gt[WAV_NB];
+    int32_t g1[WAV_NB], g[WAV_NB];
+    wav_gs_t gs, gts;
     int32_t cutq8 = (clamp(p[P_E4], 0, 127) * 3072 + m->cutoff * 24) / 127;
-    int32_t pd = clamp(p[P_E7], 0, 127) * 258;          /* WNDW depth, Q15 */
+    int32_t pd = WAV_IS_B(p[P_E0]) ? 0 : clamp(p[P_E7], 0, 127) * 258;   /* WNDW depth, Q15 (engine B: E7 is FADE, no window) */
     uint32_t ph = v->ph[0], inc = m->inc, i, j;
     uint32_t pc = (uint32_t)(m->shape - (64 << 8)) << 17;   /* the window's centre: 0 at SHAPE's default (the VST's POSITION 0);
                                                          * the SHP amounts move it, a whole cycle over the knob's range */
@@ -499,6 +641,8 @@ static void wavelet_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
     if (!wav_valid[pi])
         return;
     wav_gains(p, cutq8, inc, g1, gate);
+    if (WAV_IS_B(p[P_E0]))
+        wav_bscale(p, ps, (uint32_t)(v - t->v) % NVOICE, g1);
     if (!v->s[0]) {
         for (j = 0; j < WAV_NB; j++)
             g0[j] = (int16_t)g1[j];
@@ -515,21 +659,22 @@ static void wavelet_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
         int32_t y, dry = 0;
         if (!(i & 7u)) {                                /* the gains: four steps over the block */
             int32_t q = (int32_t)(i >> 3) + 1;
-            for (j = 0; j < WAV_NB; j++) {
+            for (j = 0; j < WAV_NB; j++)
                 g[j] = g0[j] + (((g1[j] - g0[j]) * q) >> 2);
-                gt[j] = gate[j];
-            }
+            wav_gs_set(&gs, g);
+            if (pd)
+                wav_gs_set(&gts, gate);
             c1.i = c2.i = d1.i = d2.i = WAV_RD_NONE;    /* (the sums are of the old gains) */
         }
-        y = wav_read(T, ph, g, &c1);
+        y = wav_read(T, ph, &gs, &c1);
         if (pd)                                         /* the dry cycle, band-limited by the gate alone */
-            dry = wav_read(T, ph, gt, &d1);
+            dry = wav_read(T, ph, &gts, &d1);
         if (T2) {
             int32_t xw = xbase + (int32_t)i * xstep;
             /* (64 bits: the difference of two Q15 values times a Q15 share can pass 2^31) */
-            y += (int32_t)(((int64_t)(wav_read(T2, ph, g, &c2) - y) * xw) >> 15);
+            y += (int32_t)(((int64_t)(wav_read(T2, ph, &gs, &c2) - y) * xw) >> 15);
             if (pd)
-                dry += (int32_t)(((int64_t)(wav_read(T2, ph, gt, &d2) - dry) * xw) >> 15);
+                dry += (int32_t)(((int64_t)(wav_read(T2, ph, &gts, &d2) - dry) * xw) >> 15);
         }
         if (pd) {                                       /* the window: dry outside, the filtered sum inside */
             uint32_t d = ph - pc;
@@ -550,26 +695,25 @@ static void wavelet_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
         g0[j] = (int16_t)g1[j];
 }
 
-#include "wavelet_presets.h"                            /* WAVELET_PRESETS (tools/gen_wavelet_presets.js) */
-
 static const engine_t ENG_WAVELET = {
     .name = "WAVELET",
     .page_title = {"ATOMS", "SCALE"},
     .edit = {
-        {"WAVE", F_ENUM, 0, 5, 0, N_WWAVE, 0},
+        {"WAVE", F_ENUM, 0, 11, 0, N_WWAVE, 0},         /* 0 .. 5 engine A, 6 .. 11 engine B */
         {"WVLT", F_ENUM, 0, WAV_NW - 1, 2, N_WVLT, 0},
-        {"PHAS", F_PCT, 0, 127, 0, 0, 0},               /* WDTH on PLS / TRI (wavelet_desc) */
-        {"SPRS", F_PCT, 0, 127, 0, 0, 0},
+        {"PHAS", F_PCT, 0, 127, 0, 0, 0},               /* WDTH on PLS / TRI, BARS in engine B (wavelet_desc) */
+        {"SPRS", F_PCT, 0, 127, 0, 0, 0},               /* TILT in engine B */
         {"CUT", F_INT, 0, 127, 127, 0, 0},
         {"RES", F_PCT, 0, 127, 0, 0, 0},
         {"FLT", F_ENUM, 0, 17, 2, N_WFLT, 0},
-        {"WNDW", F_PCT, 0, 127, 0, 0, 0},
+        {"WNDW", F_PCT, 0, 127, 0, 0, 0},               /* FADE in engine B */
     },
     .presets = WAVELET_PRESETS,
     .npresets = NELEM(WAVELET_PRESETS),
     .note_on = wavelet_note_on,
     .render = wavelet_render,
     .knob = {P_E4, P_E5, P_E3, P_REL},
+    .poly = 4,                                          /* a voice costs about twice ANALOG's: 4 voices = ANALOG's 8 (the FM-1 is small: no overload) */
     .keep = 0x01,                                       /* the gains' ramp goes on over a retrigger */
     .desc = wavelet_desc,
     .mem = sizeof(wav_part_t),
