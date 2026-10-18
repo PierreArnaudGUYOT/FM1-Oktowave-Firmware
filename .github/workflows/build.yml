@@ -55,8 +55,14 @@ jobs:
           ls "$HOME/.jieli/toolchain/pi32v2/bin" | head -5
       - name: "JieLi AC79 SDK files (Apache-2.0: uboot.boot, cfg_tool.bin, eq_cfg_hw.bin; SHA-256 checked by build.py)"
         run: |
-          git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 --filter=blob:none --sparse \
-              https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"
+          for try in 1 2 3 4; do
+            rm -rf "$HOME/fw-AC79_AIoT_SDK"
+            if git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 --filter=blob:none --sparse \
+                https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"; then break; fi
+            echo "clone failed (try $try), waiting"
+            [ "$try" = 4 ] && exit 1
+            sleep $((try * 20))
+          done
           cd "$HOME/fw-AC79_AIoT_SDK" && git sparse-checkout set cpu/wl82/tools && ls cpu/wl82/tools | head
       - name: Version
         id: ver
