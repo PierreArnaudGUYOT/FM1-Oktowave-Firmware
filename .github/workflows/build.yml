@@ -7,13 +7,14 @@
 #   workflow_dispatch: the same, with `update_baselines` to rewrite tests/golden.txt and target_budget.txt (uploaded
 #     as an artifact to commit by hand; cpu_baseline.txt is only written on macOS: regress.c has no instruction
 #     counter elsewhere) and `release` for a release-identity build
-#   a tag vX.Y: a release build (identity FM-1_9XY, oktowave-X.Y.fwsc, a version string "OKTOWAVE vX.Y"), a GitHub
-#     release with the package, the app image, SHA256SUMS and the licences, and the site
+#   a tag vX.Y (OKTOWAVE, main), groovebox-vX.Y (OKTOGROOVE) or duo-vX.Y (OKTODUO), each on its edition's branch: a release build
+#     (identity FM-1_9XY, <edition>-X.Y.fwsc, a version string "<EDITION> vX.Y"), a GitHub release with the package, the app image,
+#     SHA256SUMS and the licences, and the site
 name: build
 on:
   push:
     branches: ["**"]
-    tags: ["v*"]
+    tags: ["v*", "*-v*"]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -74,12 +75,16 @@ jobs:
           REF: ${{ github.ref }}
         run: |
           REL="$REL_INPUT"
-          case "$REF" in refs/tags/v*) REL="${REF#refs/tags/v}";; esac
+          case "$REF" in refs/tags/v*) REL="${REF#refs/tags/v}";; refs/tags/*-v*) REL="${REF##*-v}";; esac
           if [ -n "$REL" ] && ! printf '%s' "$REL" | grep -Eq '^[0-9]\.[0-9](\.[0-9]){0,2}(-[A-Za-z0-9]+)?$'; then
             echo "release '$REL' is not X.Y, X.Y.Z, X.Y.Z.W or X.Y-suffix (one digit each)"; exit 1
           fi
+          ED=OKTOWAVE                                   # the edition this tree builds: a define in felucca.c (tools/build.py reads the same)
+          if grep -q '^#define OKTOWAVE_DUO\b' firmware/src/felucca.c; then ED=OKTODUO
+          elif grep -q '^#define OKTOWAVE_GROOVEBOX\b' firmware/src/felucca.c; then ED=OKTOGROOVE; fi
           echo "release=$REL" >> "$GITHUB_OUTPUT"
-          echo "release: '$REL'"
+          echo "edition=$ED" >> "$GITHUB_OUTPUT"
+          echo "release: '$REL', edition: $ED"
       - name: Build the firmware
         env:
           REL: ${{ steps.ver.outputs.release }}
@@ -130,15 +135,21 @@ jobs:
               "build/host/${ED}_test" | tee "build/${ED}_test.log"
             fi
           done
+      - name: "The shared voice budget with WAVELET's weight (tests/budget_test.c)"
+        if: always()
+        run: |
+          cc -w -Ibuild/gen -Ifirmware/src -o build/host/budget_test tests/budget_test.c -lm
+          build/host/budget_test | tee build/budget_test.log
       - name: Browser emulator (web/emu)
         run: sh web/emu/build.sh
       - name: Site (installer + try it in the browser + manual)
         env:
           REL: ${{ steps.ver.outputs.release }}
+          ED: ${{ steps.ver.outputs.edition }}
         run: |
           PKG=$(ls build/*.fwsc | head -1)
           VER="$REL"; [ -n "$VER" ] || VER="dev-$(git rev-parse --short HEAD)"
-          python3 web/make_site.py "$PKG" "$VER" build/site
+          EDITION="$ED" python3 web/make_site.py "$PKG" "$VER" build/site
           mkdir -p build/site/webapp/try build/site/manual
           cp -r build/emu/. build/site/webapp/try/
           cp docs/manual.html build/site/manual/index.html
@@ -227,9 +238,11 @@ jobs:
         run: |
           DIR=$(ls -d firmware/release-*/ | head -1)
           [ -d "$DIR" ] || { echo "no release folder in the firmware artifact"; exit 1; }
-          PRE=""; case "$TAG" in v0.*) PRE="--prerelease";; esac
-          gh release create "$TAG" $PRE --repo "$GITHUB_REPOSITORY" --title "OKTOWAVE ${TAG#v}" \
-            --notes "OKTOWAVE ${TAG#v}: Felucca plus the WAVELET engine for the M-VAVE FM-1. Install with the web installer (https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/) or tools/fm1_install.py. Not yet run on a real FM-1: install at your own risk, keep the way back to the official firmware. SHA-256 sums are in SHA256SUMS." \
+          PRE=""; case "$TAG" in v0.*|*-v0.*) PRE="--prerelease";; esac
+          PK=$(ls "$DIR"/*.fwsc | head -1); NAME=$(basename "$PK" .fwsc)            # e.g. oktoduo-0.1
+          ED=$(echo "${NAME%%-*}" | tr a-z A-Z); VER="${NAME#*-}"
+          gh release create "$TAG" $PRE --repo "$GITHUB_REPOSITORY" --title "$ED $VER" \
+            --notes "$ED $VER: a firmware for the M-VAVE FM-1 built on Felucca, with the Wavelet Synthesizer's WAVELET engine. Install with the web installer (https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/, the edition's page) or tools/fm1_install.py. Not yet run on a real FM-1: install at your own risk, keep the way back to the official firmware. SHA-256 sums are in SHA256SUMS." \
             "$DIR"/*.fwsc "$DIR"/*.bin "$DIR"/SHA256SUMS "$DIR"/LICENSE "$DIR"/LICENSING.md
   refresh-main:
     needs: build

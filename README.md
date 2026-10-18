@@ -22,8 +22,8 @@ filter (low-, high- or band-pass in bands, with slope and resonance) and a windo
 
 > **Version 0.1 has not been run on an FM-1 yet.** Built with the official toolchain on GitHub Actions and tested on
 > computers only: the engine's standalone test (every wave and wavelet, the presets, a sample-for-sample check of the render,
-> the cross-fade, a floating-point reference) and the browser build; Felucca's own host suite runs in the workflow too (its
-> baselines for the new engine are being regenerated, see the workflow runs).
+> the cross-fade, the scale of engine B, a floating-point reference of the tables) and the browser build; Felucca's own host suite
+> runs in the workflow too, with golden renders for the 108 WAVELET presets (none of Felucca's own renders changed).
 > Installing a custom firmware is at your own risk: back up first and keep the way back to the official firmware.
 
 ## What is where

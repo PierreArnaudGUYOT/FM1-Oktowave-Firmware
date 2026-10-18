@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OKTODUO manual</title>
-<meta name="description" content="OKTOWAVE: the Wavelet Synthesizer's engine on the M-VAVE FM-1, as a Felucca firmware. Install, play, the WAVELET engine's parameters, the presets.">
+<meta name="description" content="OKTODUO: two synths for the M-VAVE FM-1 built on Felucca, its six-operator FM synth and the Wavelet Synthesizer's WAVELET engine, with the drum kits. Install, play, the WAVELET engine's parameters, the presets.">
 <style>
   :root { --bg: #fbfaf7; --fg: #1d1c1a; --dim: #6b675f; --line: #d9d4c8; --card: #f1eee6; --acc: #b5451b; --code: #ece8de; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #16171a; --fg: #ecebe6; --dim: #a39f95; --line: #3a3c42; --card: #202227; --acc: #f09a6c; --code: #26282e; } }
@@ -39,12 +39,12 @@
 <body>
 <main>
 <h1>OKTODUO <small>manual · version 0.1 · for the M-VAVE FM-1</small></h1>
-<p>OKTOWAVE is an alternative firmware for the M-VAVE FM-1 pocket synthesizer: Hügelton Instruments'
-<a href="https://github.com/hugelton/Felucca">Felucca</a> 1.6.1 with one more synthesis engine, <b>WAVELET</b>, the
+<p>OKTODUO is the duo edition of OKTOWAVE, an alternative firmware for the M-VAVE FM-1 pocket synthesizer: Hügelton Instruments'
+<a href="https://github.com/hugelton/Felucca">Felucca</a> 1.6.1 with two synthesis engines to choose from, its FM6 and <b>WAVELET</b>, the
 subtractive engine of the <a href="https://github.com/PierreArnaudGUYOT/Free-Wavelet-Synthesizer-VST">Wavelet
 Synthesizer</a> by Pierre Arnaud GUYOT (OktoPierre), rewritten for the FM-1's processor: both of its engines (A, subtractive, and B, additive) and 108 of its presets, all of OktoPierre's TOP Sounds among them.
-Everything else is Felucca: four tracks, its thirteen engines, the sequencer, arpeggiator, chords, effects, USB
-audio and MIDI. This manual covers what OKTOWAVE adds; for the rest, Felucca's
+Everything else is Felucca: four tracks, the sequencer, arpeggiator, chords, effects, USB
+audio and MIDI. This manual covers what OKTODUO adds; for the rest, Felucca's
 <a href="https://github.com/hugelton/Felucca/wiki/Home">wiki</a> is the reference.</p>
 
 <div class="card">
@@ -53,8 +53,7 @@ sequencer (ratchets, chance, accents, slides, conditions), arpeggiator, chord ke
 from for each track</b>: <b>FM6</b>, Felucca's six-operator FM synth (32 algorithms, the DX-style voices and the voice bank), and <b>WAVELET</b>,
 the Wavelet Synthesizer's engines A and B (108 presets, OktoPierre's TOP Sounds first), plus <b>DRUM</b>, Felucca's kits, for the rhythm
 tracks. The other engines of Felucca (ANALOG, PHASE, LOFI, SAMPLE, VOICE, TRIO, WHEEL, GRAIN, PHYS, NOISE, SLICE) are not offered; they stay in
-the firmware, so a project or a user preset saved by Felucca or OKTOWAVE that uses one still loads and sounds (the EDIT page then shows the first
-engine for it). The editions with more engines are OKTOWAVE (all of them) and OKTOGROOVE (WAVELET and DRUM only). Section 12 has the details.</p>
+the firmware, so a project or a user preset saved by Felucca or OKTOWAVE that uses one still loads and sounds (the ENG column then shows its real name, the EDIT keys show none lit, and turning the engine knob replaces it by one of the three). The editions with more engines are OKTOWAVE (all of them) and OKTOGROOVE (WAVELET and DRUM only). Section 12 has the details.</p>
 </div>
 
 <nav class="toc">
@@ -84,40 +83,40 @@ starts, recovery needs <a href="https://github.com/kurogedelic/FM-1-transporter"
 <h2 id="install">1. Install</h2>
 <ol>
 <li>Connect the FM-1 to the computer with a USB cable and switch it on.</li>
-<li>Open the <a href="https://pierrearnaudguyot.github.io/FM1-Oktowave-Firmware/">web installer</a> in Chrome or
+<li>Open the <a href="https://pierrearnaudguyot.github.io/FM1-Oktowave-Firmware/duo/">web installer</a> (the page of this edition) in Chrome or
 Edge (Web MIDI is needed: recent Firefox asks for a permission, Safari does not have it).</li>
-<li>Press <b>Install</b> and follow the page. The FM-1 restarts into OKTOWAVE; the menu shows
-<code>OKTOWAVE v0.1</code>.</li>
+<li>Press <b>Install</b> and follow the page. The FM-1 restarts into OKTODUO; the menu shows
+<code>OKTODUO v0.1</code>.</li>
 </ol>
 <p>From the command line, with Python 3 and <code>pip3 install mido python-rtmidi</code>:
-<code>python3 tools/fm1_install.py oktowave-0.1.fwsc</code> (the package is in the
-<a href="https://github.com/PierreArnaudGUYOT/FM1-Oktowave-Firmware/releases">releases</a>).</p>
-<p>OKTOWAVE is a Felucca package: it installs over Felucca, the official firmware or another custom firmware the
+<code>python3 tools/fm1_install.py oktoduo-0.1.fwsc</code> (the package is in the
+<a href="https://github.com/PierreArnaudGUYOT/FM1-Oktowave-Firmware/releases">releases</a>, under the tag <code>duo-v0.1</code>).</p>
+<p>OKTODUO is a Felucca package: it installs over Felucca, the official firmware or another custom firmware the
 same way, and Felucca's installer, editor and backup tools work with it. Songs and user presets saved by
 Felucca 1.6 load as they are; a song that used a WAVELET part will not sound right on plain Felucca (the
 engine is not there).</p>
 
 <h2 id="try">2. Try it in the browser</h2>
-<p>The page opens on a window with four choices: <b>Run the demo</b> (the four tracks play and the lead walks through the sounds,
-the TOP Sounds first), <b>Play the synth</b> (switch the FM-1 on and play), <b>Install on an FM-1</b> (the installer) and <b>User manual</b>.
-<a href="https://pierrearnaudguyot.github.io/FM1-Oktowave-Firmware/webapp/try/">The firmware in your browser</a>:
+<p>The page opens on a window with four choices: <b>Run the demo</b> (the four tracks play and the lead walks through the FM6 sounds), <b>Play the synth</b> (switch the FM-1 on and play), <b>Install on an FM-1</b> (the installer) and <b>User manual</b>.
+<a href="https://pierrearnaudguyot.github.io/FM1-Oktowave-Firmware/duo/webapp/try/">The firmware in your browser</a>:
 the same code, compiled to WebAssembly, with the FM-1's screen, buttons, knobs and keys drawn on the page
 (after X0X's and Felucca's browser builds). Click the keys or use the computer keyboard. It keeps its saves in
 the browser. Not there: USB, MIDI and the user sample slots.</p>
 
 <h2 id="start">3. Quick start</h2>
 <figure><img src="controls.jpg" alt="The FM-1's panel with the names of the buttons and knobs used by Felucca"><figcaption>The panel as Felucca names it (from Felucca's documentation).</figcaption></figure>
-<p>At power-on the four tracks are ready to play together, all in C minor: track 1 the bass <code>REESE SUB</code> with the pattern
-<code>OKTOBASS</code>, track 2 the pad <code>WARM PAD</code> (a TOP Sound) with <code>OKTOCHRD</code>, track 3 the lead
-<code>PULSE LEAD</code> (a TOP Sound) with <code>OKTOLEAD</code>, track 4 the DRUM kit with <code>BEAT</code>. Press <kbd>PLAY</kbd> to hear
+<p>At power-on the four tracks are ready to play together, all in C minor: track 1 the FM bass <code>FM BASS</code> (FM6) with the pattern
+<code>OKTOBASS</code>, track 2 the pad <code>WARM PAD</code> (WAVELET, a TOP Sound) with <code>OKTOCHRD</code>, track 3 the FM electric piano
+<code>TINE EP</code> (FM6) with <code>OKTOLEAD</code>, track 4 the DRUM kit with <code>BEAT</code>. The pad and the electric piano play MONO
+(one voice each, legato; the VOICE page changes it), which leaves the shared budget of eight voices room for the bass. Press <kbd>PLAY</kbd> to hear
 them; <kbd>PLAY</kbd> again stops. The keys play the selected track, so you can play over the groove or change any sound while it runs.
 The new patterns are in SAVE &rsaquo; PHRASES for any track.</p>
 <ul>
 <li><b>Choose a sound</b>: turn the <kbd>PRESETS</kbd> knob. In the PRESETS page (<kbd>SAVE</kbd>, one tap) the
-<kbd>KNOB 1</kbd> steps through the engines: WAVELET is the first, before ANALOG.</li>
-<li><b>Choose the track</b>: the <kbd>SELECT</kbd> knob.</li>
+<kbd>KNOB 2</kbd> steps through the engines (the ENG column); the PRESETS knob steps through the sounds.</li>
+<li><b>Choose the track</b>: the <kbd>ALGORITHM</kbd> knob steps through the four tracks (on every page). The <kbd>SELECT</kbd> knob is the tempo.</li>
 <li><b>The four knobs on HOME</b> (<kbd>HOME</kbd>): for a WAVELET sound they are <code>CUT</code> (the
-cutoff), <code>RES</code> (resonance), <code>SPRS</code> (sparsity) and <code>REL</code> (release).</li>
+cutoff), <code>RES</code> (resonance), <code>SPRS</code> (sparsity; <code>TILT</code> in engine B) and <code>REL</code> (release).</li>
 <li><b>All eight engine parameters</b>: <kbd>EDIT</kbd> opens the page <b>ATOMS</b> (WAVE, WVLT, PHAS or
 WDTH, SPRS); <kbd>EDIT</kbd> again opens <b>SCALE</b> (CUT, RES, FLT, WNDW). Each knob is one parameter. With WAVE on one of the
 six engine-B patterns (RAMP .. RAND) the knobs read BARS and TILT instead of PHAS and SPRS, and FADE instead of WNDW (section 5).</li>
@@ -126,8 +125,9 @@ six engine-B patterns (RAMP .. RAND) the knobs read BARS and TILT instead of PHA
 <li><b>Save</b>: <kbd>SAVE</kbd> (USER page) stores the sound in one of 32 user slots; projects keep the four
 tracks, their sounds and patterns.</li>
 </ul>
-<p>Turning WAVE, WVLT, PHAS/WDTH or SPRS rebuilds the sound's wave table: the new sound fades in over about
-12 ms once the build is done (3 to 50 ms, longer with DB20 than with HAAR). Everything else acts at once.</p>
+<p>Turning WAVE, WVLT, PHAS/WDTH or SPRS (engine A) or WAVE or WVLT (engine B) rebuilds the sound's wave table: the new sound fades in over about
+12 ms once the build is done (a few to about 50 ms, longer with DB20 than with HAAR; the old sound plays meanwhile). Everything else, BARS, TILT and FADE
+included, acts at once and rebuilds nothing.</p>
 
 <h2 id="idea">4. How the WAVELET engine works</h2>
 <p>A classic subtractive synth filters an oscillator by frequency. WAVELET filters it by <i>scale</i>. One cycle
@@ -151,12 +151,13 @@ RAMP, MIRR, ALT, WALS, IMPL, RAND): every atom of a band at the same level (RAMP
 (MIRR), up or down by band (ALT), alternating by atom (WALS), the first atom of each band only (IMPL), random (RAND). Each band's
 layer is scaled to the same peak; what shapes the sound is the gain of each band: a <b>registration</b> (BARS: one of 16 sets of nine
 levels, like an organ's drawbars), a <b>tilt</b> (TILT: how much each band is below the one under it) and a <b>scale envelope</b> that
-swells with the amp attack and, with FADE, lets the upper bands fall to half faster than the lower ones. The cutoff, the resonance
+swells with the amp attack and, with FADE, lets every band fall toward the level of SUS, the faster the higher the band (the top band in the time FADE sets, the lowest about six times slower). The cutoff, the resonance
 and the filter type act on the bands as in engine A. There is no sparsity, no window and no phase in engine B.</p>
 <p>Everything runs in fixed point, with no floating point: the tables are 16-bit, the gains 10-bit fractions, the
 transforms 20-bit samples with 28-bit coefficients. A WAVELET voice costs about twice an ANALOG voice (measured on a
-computer, 1.6 to 2.3 times; not yet measured on the FM-1), a little more while a new table fades in. So that a part never costs more than
-the FM-1 does for ANALOG's eight voices, <b>a WAVELET part plays at most four voices</b> (POLY and UNISON; the oldest note is taken first).
+computer, 1.6 to 2.3 times; not yet measured on the FM-1), a little more while a new table fades in. So that the FM-1 is never asked for more than for
+ANALOG's eight voices, <b>a WAVELET part plays at most three voices</b> (POLY and UNISON) and <b>a WAVELET voice counts as two voices of the shared budget of eight</b>
+(four WAVELET voices in all, with or without other tracks: when the budget is full the oldest released voice goes first, else the oldest held one, never the lowest held note).
 Bands that are filtered out or beyond the pitch's limit are skipped in the sum. The two cores share
 the parts as for every engine; the table builds run on the first core, a slice at a time.</p>
 
@@ -175,7 +176,7 @@ the parts as for every engine; the table builds run on the first core, a slice a
 <tr><td>SCALE · 4</td><td><code>WNDW</code></td><td>0 .. 100 %</td><td>The window's depth: 0 = the filtered sound everywhere; 100 % = the dry cycle outside the window and the filtered one inside it. In between, a mix. The window is half a cycle wide; its place is SHAPE (section 6). Engine A only.</td></tr>
 <tr><td>ATOMS · 3</td><td><code>BARS</code></td><td>0 .. 127</td><td><b>Engine B.</b> The registration: one of 16 sets of nine levels, <code>BARS / 8</code>. 0 = all bands at the same level (the buzziest), then the sets the presets use: organ-like (a few strong low bands), flute (the first three bands), choir (all bands), bell (gaps) and so on.</td></tr>
 <tr><td>ATOMS · 4</td><td><code>TILT</code></td><td>0 .. 100 %</td><td><b>Engine B.</b> How much each band is below the one under it: 0 = none, 100 % = 24 dB per band (only the fundamental is left).</td></tr>
-<tr><td>SCALE · 4</td><td><code>FADE</code></td><td>0 .. 100 %</td><td><b>Engine B.</b> 0 = no fade. Higher: the upper bands fall to half, the faster the higher the band (at 100 % the top band in a millisecond, the lowest in ten seconds). The sound swells over the amp ATK first.</td></tr>
+<tr><td>SCALE · 4</td><td><code>FADE</code></td><td>0 .. 100 %</td><td><b>Engine B.</b> 0 = no fade. Higher: every band falls toward the level of <code>SUS</code> (the ENV page), the faster the higher the band (at 100 % the top band in a millisecond, the lowest about six times slower; the way a xylophone or a marimba dies). Back to 0 the bands come back to full. The sound swells over the amp ATK first.</td></tr>
 </tbody>
 </table>
 <p>The values 0 .. 127 of the knobs are what Felucca's editor and the SysEx protocol see (engine values
@@ -201,8 +202,8 @@ carry their drive, chorus, delay and reverb amounts from the VST.</li>
 </ul>
 
 <h2 id="vst">7. Differences from the Wavelet Synthesizer</h2>
-<p>The FM-1 has a small integer processor and no floating point, so the engine is a reduced version of engine
-A of the VST / web app (beta 0.6). What it keeps: the source waves, the seven wavelets, the atoms and bands,
+<p>The FM-1 has a small integer processor and no floating point, so the engine is a reduced version of the VST / web app
+(beta 0.7, engines A and B). What it keeps: the source waves, the seven wavelets, the atoms and bands,
 sparsity, the source phase, the scale filter (types, slope, resonance, envelope and LFO to the cutoff), the
 window and its position. What is reduced or left out:</p>
 <table>
@@ -210,11 +211,11 @@ window and its position. What is reduced or left out:</p>
 <tbody>
 <tr><td>2048-sample cycle, 11 bands, 11 band-limited mip levels per layer</td><td>512-sample cycle, 9 bands (harmonics 1 .. 256; the VST's bands 10 and 11 would be above 10 kHz on any note above 40 Hz). <b>Anti-aliasing is much weaker than in the VST.</b> There are no mip levels: a band whose harmonics would pass Nyquist is faded out, one octave coarse, and the dry cycle under the window is gated the same way. The wavelet layers themselves are not band-limited, so edgy waves (SAW and PLS with HAAR or DB2) alias audibly on high notes: measured on a computer, the energy off the harmonics is about 30 dB under the harmonics at C3 and 10 to 16 dB under at C6 to C8 (ANALOG's saw: 48 down to 34 dB). Smoother wavelets (DB4 and up) and lower cutoffs are cleaner. A per-pitch table is the planned fix.</td></tr>
 <tr><td>A/B MIX, WAVELET MORPH, LFO 2, SOURCE PHASE moved by LFO 2, the sub oscillator, unison inside the voice, the chorus / delay / reverb / limiter of the plug-in</td><td>Not there: a sound is engine A or engine B, not both. Felucca's own LFO, matrix, UNISON voice mode and effects replace what they can. The presets of the VST's "Source Phase" section that needed LFO 2 (the "Shift" sounds) are left out; the static ones are in.</td></tr>
-<tr><td>Engine B: 11 drawbars, TILT +12 .. −24 dB, its own attack, spread, body, bright and sustain, 100 random seeds</td><td>Nine bands. BARS picks the <b>nearest of 16 registrations</b>, built from the drawbar sets the presets use (bands 10 and 11 dropped): a preset with an unusual set is approximated. TILT is −24 .. 0 dB per band (the few positive tilts become flat). The scale envelope swells over the amp ATK (the slower of the VST's and the amp's attack is kept in the presets, the attack spread is lost) and falls to half with FADE; the VST's body, bright and sustain are one parameter. The random pattern has the seed 1. The window and its position (a few presets: Focus Sweep) are lost.</td></tr>
+<tr><td>Engine B: 11 drawbars, TILT +12 .. −24 dB, its own attack, spread, body, bright and sustain, 100 random seeds</td><td>Nine bands. BARS picks the <b>nearest of 16 registrations</b>, built from the drawbar sets the presets use (bands 10 and 11 dropped): a preset with an unusual set is approximated. TILT is −24 .. 0 dB per band (a positive tilt, Mirror Sub Bass only, is folded into the bars). The scale envelope swells over the amp ATK (the slower of the VST's and the amp's attack is kept in the presets, the attack spread is lost) and falls toward the SUS level with FADE (the VST's body, bright and sustain become FADE and SUS: the bottom band is about six times slower than the top one, as in most presets; the tails of a few presets with an unusual sustain differ). The random pattern has the seed 1. The window and its position (a few presets: Focus Sweep) are lost.</td></tr>
 <tr><td>KEY TRK 0 .. 100 %, VEL AMT, the window's WIDTH, POSITION knob, a separate filter envelope</td><td>Key tracking is 100 %, the window is a quarter-cycle each side of its centre (above about 1.4 kHz it narrows by half, abruptly), its centre starts at the cycle's start (the VST's POSITION 0) and moves with the SHP amounts, the filter envelope is the amp envelope (ENV DEST FLT). Velocity reaches the cutoff through the MOD matrix. The presets that used POSITION, the window's width or its LFO (a handful) differ from the VST's.</td></tr>
 <tr><td>SLOPE 6 .. 96 dB/band, any value; band-reject</td><td>Six slopes (12 18 24 36 48 96) and three types; the presets took the nearest slope (no preset used band-reject).</td></tr>
 <tr><td>SPARSITY: K = N<sup>1−s</sup> of the N non-zero atoms of a 2047-atom transform, counted down to 10<sup>−9</sup> of the largest</td><td>N counts the atoms of a 511-atom transform, down to 2<sup>−18</sup> (−108 dB): the same law on fewer atoms, so a VST preset's SPARSITY value keeps fewer atoms here (the sound thins a little earlier).</td></tr>
-<tr><td>Tables rebuilt in a few milliseconds on a computer</td><td>About 6 to 64 blocks of 11.6 ms-per-32-samples audio time (HAAR .. DB20: roughly 20 to 190 ms on the FM-1 if a slice keeps its share), in slices inside the audio interrupt, then a fade of 16 blocks of 512 samples (about 190 ms); while a knob keeps turning, the build starts over. The old sound plays meanwhile. Not measured on the FM-1.</td></tr>
+<tr><td>Tables rebuilt in a few milliseconds on a computer</td><td>5 to 64 audio blocks of 32 samples (3.6 to 46 ms: HAAR .. DB20) if the slices keep their share, in slices inside the audio interrupt, then a fade of 16 blocks (about 12 ms); while a knob keeps turning, the build starts over. The old sound plays meanwhile. Not measured on the FM-1.</td></tr>
 <tr><td>Double precision</td><td>16-bit tables, 10-bit gains, 20-bit transforms: the engine's test shows the tables within about −72 dB of a floating-point re-implementation of the same algorithm (the cases where two atoms tie for the last place kept by SPARSITY are not compared). The gain law was also compared with the VST's filter code on 1368 settings: within 0.5 to 1.9 dB where the gain is above −48 dB.</td></tr>
 </tbody>
 </table>
@@ -375,7 +376,7 @@ For a bass with a fixed-frequency feel, play it low with a low CUT.</li>
 </ul>
 
 <h2 id="build">10. Build and test it yourself</h2>
-<p>The power-on tracks and their patterns differ from Felucca's: that is OKTOWAVE's own (a project saved by Felucca, and the host tests, still start from Felucca's defaults). <b>Favourites</b> do not exist for the WAVELET engine (Felucca's favourites table has no room for a fifteenth engine).</p>
+<p>The power-on tracks and their patterns differ from Felucca's: that is this firmware's own (a project saved by Felucca, and the host tests, still start from Felucca's defaults). <b>Favourites</b> do not exist for the WAVELET engine (Felucca's favourites table has no room for a fifteenth engine).</p>
 <p>The source is on <a href="https://github.com/PierreArnaudGUYOT/FM1-Oktowave-Firmware">GitHub</a>. The firmware
 builds like Felucca (<code>BUILDING.md</code>: JieLi's pi32v2 clang 4.0.1, Linux x86-64; three files of the
 Apache-2.0 AC79 SDK; Python with Pillow and fontTools). The repository's GitHub Actions workflow does all of it
@@ -394,28 +395,32 @@ WHEEL and NOISE engines (Felucca-Engines) MIT; its ports of DaisySP and Rings (M
 Hügelton Sample Pack (CC0 1.0); Fukiai icons (MIT); the Inter Tight and DotGothic16 fonts (SIL OFL 1.1). The
 browser build follows Charles Vestal's X0X. See <code>LICENSING.md</code> and <code>CREDITS.md</code>.</li>
 <li><b>WAVELET engine, presets, tools and this manual</b>: Copyright © 2026 Pierre Arnaud GUYOT (OktoPierre),
-GPL-3.0-only (the firmware as a whole is GPL-3.0-only). It is a port of engine A of the Wavelet Synthesizer
+GPL-3.0-only (the firmware as a whole is GPL-3.0-only). It is a port of engines A and B of the Wavelet Synthesizer
 (GPL-3.0-or-later, same author). Wavelet filter coefficients computed with PyWavelets (MIT).</li>
 <li>The package carries three files of JieLi's AC79 SDK (Apache-2.0), as Felucca's does.</li>
-<li>M-VAVE and FM-1 are trademarks of their respective owners. OKTOWAVE is not affiliated with or endorsed by
-M-VAVE, nor by Hügelton Instruments.</li>
+<li>M-VAVE and FM-1 are trademarks of their respective owners. OKTODUO is not affiliated with or endorsed by
+M-VAVE, Hügelton Instruments or Baud Girl.</li>
 </ul>
 <h2 id="groove">12. The duo edition</h2>
 <ul>
 <li><b>The idea</b>: a groovebox with two different synths side by side: the FM synth for bells, electric pianos, basses and brass, the
 WAVELET engine for pads, strings, organs, leads and textures, each track on whichever it needs, a track of drums on the kits. The
-alternative firmware by Baud Girl for the FM-1 follows the same idea (an FM synth and a second synth, a 64-step sequencer); it is closed
-source, so this edition is built on Felucca (open source) and does not use any of its code. Baud Girl's second synth is a virtual analog
-one; here the second synth is WAVELET.</li>
+idea of an FM synth with a second synth on the FM-1 is also that of <b>FM-1+VA</b> by <a href="https://baudgirl.com/work/FM-1+VA">Baud Girl</a>,
+which adds virtual analog synth engines and a 64-step sequencer, as <a href="https://synthanatomy.com/2026/09/baud-girl-fm-1-va-custom-m-vave-fm-1-firmware.html">Synth Anatomy</a>
+and its vendor describe it. When this edition was written no source of it was published that we could find (the community directory
+<a href="https://fm1-editor.com/firmware/">fm1-editor.com</a> lists it as "Not on GitHub"; Synth Anatomy mentions a planned open-source release), so OKTODUO is built on Felucca,
+whose source is open. <b>It does not use any of Baud Girl's code, designs or assets</b>: it only shares the idea of two synths. Baud Girl's second synth is virtual analog;
+here the second synth is WAVELET. OKTODUO is not affiliated with or endorsed by Baud Girl.</li>
 <li><b>What changes from Felucca</b>: the engine list (PRESETS knob 2 / ENG column and the EDIT layer's white keys: FM6, WAVELET, DRUM) and the
 power-on and project defaults. At power-on the four tracks play together after a press of PLAY, in C minor: track 1 the FM bass <code>FM BASS</code>
 (pattern <code>OKTOBASS</code>), track 2 the pad <code>WARM PAD</code> of WAVELET (<code>OKTOCHRD</code>), track 3 the FM electric piano
 <code>TINE EP</code> (<code>OKTOLEAD</code>), track 4 the drum kit (<code>BEAT</code>). Nothing else changes: the storage formats, the editor
 protocol, USB and MIDI are Felucca's.</li>
-<li><b>The WAVELET engine</b> is as described above (sections 4 to 8). A WAVELET part plays at most four voices, so that the FM-1 is never asked
-for more than it does for Felucca's eight ANALOG voices.</li>
-<li><b>Old projects</b>: a track left on an engine this edition does not offer plays as before; it appears as the first engine (FM6) on its page.</li>
-<li><b>Install and try</b>: the same package format and installer as the other editions; the version string reads <code>OKTODUO v0.1</code>. Try it in
+<li><b>The WAVELET engine</b> is as described above (sections 4 to 8). A WAVELET part plays at most three voices, and a WAVELET voice counts as two of
+the eight voices the four tracks share (so four WAVELET voices in all, the oldest released voice going first when a note needs room), so that the FM-1 is never asked
+for more than it does for Felucca's eight ANALOG voices. The FM6 engine's voices count one each.</li>
+<li><b>Old projects</b>: a track left on an engine this edition does not offer plays as before; the ENG column shows its real name, and turning the engine knob replaces it by FM6, WAVELET or DRUM.</li>
+<li><b>Install and try</b>: the same package format and installer as the other editions (the package is <code>oktoduo-X.Y.fwsc</code>, released under the tag <code>duo-vX.Y</code>); the version string reads <code>OKTODUO v0.1</code>. Try it in
 the browser: the page of this edition under <code>/duo/</code> on the project's site.</li>
 </ul>
 <p class="dim">OKTODUO manual, version 0.1, 2026-10-18.</p>
