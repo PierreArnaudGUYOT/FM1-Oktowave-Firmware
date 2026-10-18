@@ -120,13 +120,16 @@ jobs:
              -o build/host/wavelet_test tests/wavelet_test.c -lm
           build/host/wavelet_test build/host | tee build/wavelet_test.log
           node tools/wavelet_ref.js build/host | tee -a build/wavelet_test.log
-      - name: "OKTOGROOVE: the groovebox edition's engine list test (only where tests/groovebox_test.c exists)"
+      - name: "The editions' engine list tests (OKTOGROOVE, OKTODUO: only the tests that exist on this branch)"
         if: always()
         run: |
-          if [ -f tests/groovebox_test.c ]; then
-            cc -w -DOKTOWAVE_GROOVEBOX=1 -DOKTOWAVE_BOOT=1 -Ibuild/gen -Ifirmware/src -o build/host/groovebox_test tests/groovebox_test.c -lm
-            build/host/groovebox_test | tee build/groovebox_test.log
-          fi
+          for ED in groovebox duo; do
+            if [ -f "tests/${ED}_test.c" ]; then
+              DEF=$(echo "$ED" | tr a-z A-Z)
+              cc -w "-DOKTOWAVE_${DEF}=1" -DOKTOWAVE_BOOT=1 -Ibuild/gen -Ifirmware/src -o "build/host/${ED}_test" "tests/${ED}_test.c" -lm
+              "build/host/${ED}_test" | tee "build/${ED}_test.log"
+            fi
+          done
       - name: Browser emulator (web/emu)
         run: sh web/emu/build.sh
       - name: Site (installer + try it in the browser + manual)
