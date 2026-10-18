@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
- * Copyright (C) 2026 Pierre Arnaud GUYOT (OktoPierre) */
+ * Copyright (C) 2026 Pierre Arnaud GUYOT (OktoPierre)
+ * The minimal voice host below (track, voice_on, env_tick, the phrase) follows tests/fe_host.c of Felucca-Engines,
+ * MIT, Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments (firmware/engines/LICENSE). */
 /* The WAVELET engine on a minimal host (after Felucca-Engines' tests/fe_host.c): no Felucca sources but
  * dsp.c, eng_analog.c (a cost reference) and the engine itself, so it builds anywhere with a C compiler.
  *   cc -O2 -std=gnu99 -I build/host -o build/host/wavelet_test tests/wavelet_test.c
@@ -149,6 +151,13 @@ static void part_reset(track_t *t, uint32_t engine)
 {
     memset(t, 0, sizeof *t);
     memset(eng_mem[t - trk].b, 0, ENG_MEM_PART);
+    {   /* a part that was never WAVELET (or left it): no table, no build, as wav_tick leaves it */
+        uint32_t pi = (uint32_t)(t - trk);
+        wav_valid[pi] = 0;
+        wav_xf[pi] = 0;
+        if (wav_scr.owner == pi + 1u)
+            wav_scr.owner = 0;
+    }
     t->engine = (uint8_t)engine;
     vage = 0;
 }
@@ -156,11 +165,10 @@ static void part_reset(track_t *t, uint32_t engine)
 /* builds part t's table through wav_tick alone; returns the blocks it took (0 = never) */
 static uint32_t build_table(track_t *t)
 {
-    wav_part_t *ps = WAV_PART(t);
-    uint32_t b;
+    uint32_t b, pi = (uint32_t)(t - trk);
     for (b = 1; b < 4000u; b++) {
         wav_tick();
-        if (ps->valid && !wav_scr.owner)
+        if (wav_valid[pi] && !wav_scr.owner)
             return b;
     }
     return 0;
@@ -219,7 +227,11 @@ static result_t render_phrase(const engine_t *e, const preset_t *pr, uint32_t pa
         if (b == 100)
             voice_on(t, e, &t->v[2], 79, -17);
         if (tabswitch && b == 60)
-            t->p[P_E1] = 2;                             /* another wavelet (DB4): a rebuild and a cross-fade */
+            if (tabswitch == 2) {
+                t->p[P_E2] = (int16_t)((t->p[P_E2] + 64) & 127);   /* the source's phase flips: a rebuild and a cross-fade */
+            } else {
+                t->p[P_E1] = 2;                         /* another wavelet (DB4): a rebuild and a cross-fade */
+            }
         if (b == 150)
             for (k = 0; k < NVOICE; k++)
                 if (t->v[k].active) { t->v[k].gate = 0; t->v[k].stage = 3; }
@@ -362,24 +374,178 @@ int main(int argc, char **argv)
         wav_write(path, wavbuf, NBLK * CTL);
     }
 
+    /* 6. the render against a naive evaluation of the same table: no row cache, no integer shortcuts (a stale cached row
+     *    once gave about ten wrong samples a second per voice, and nothing else in this file could see it) */
+    {
+        uint32_t note, wv, bad_all = 0, tested = 0;
+        static const uint8_t NOTES[] = {0, 12, 36, 48, 60, 72, 84, 96, 120, 127};
+        for (wv = 0; wv < 2u; wv++)
+            for (note = 0; note < sizeof NOTES; note++) {
+                track_t *t = &trk[0];
+                voice_t *v = &t->v[0];
+                int32_t out[CTL], g1[WAV_NB], gate[WAV_NB], lastmax = 0;
+                vmod_t m;
+                uint32_t blk, i, j, bad = 0, nb = 64;
+                part_reset(t, E_WAV);
+                t->p[P_E0] = (int16_t)(wv ? 2 : 0);          /* SAW, PLS: edges everywhere */
+                t->p[P_E1] = (int16_t)(wv ? 0 : 2);          /* HAAR, DB4 */
+                t->p[P_E2] = 17;
+                t->p[P_E4] = 80;
+                t->p[P_E5] = 40;
+                t->p[P_E6] = 2;
+                build_table(t);
+                voice_on(t, &ENG_WAVELET, v, NOTES[note], 0);
+                v->stage = 2;
+                memset(&m, 0, sizeof m);
+                m.pitch16 = (int32_t)NOTES[note] * 16;
+                m.inc = pitch_inc((uint32_t)clamp(m.pitch16, 0, 2047));
+                m.amp0 = m.amp1 = 32767;
+                m.shape = 64 << 8;
+                m.cutoff = 0;
+                for (blk = 0; blk < nb; blk++) {
+                    uint32_t ph0 = v->ph[0];
+                    wav_part_t *ps = WAV_PART(t);
+                    int32_t cutq8 = (clamp(t->p[P_E4], 0, 127) * 3072 + m.cutoff * 24) / 127;
+                    memset(out, 0, sizeof out);
+                    ENG_WAVELET.render(t, v, out, CTL, &m);
+                    wav_gains(t->p, cutq8, m.inc, g1, gate);
+                    if (blk < 2u)
+                        continue;                            /* (the gains are steady from the second block) */
+                    for (i = 0; i < CTL; i++) {
+                        uint32_t ph = ph0 + i * m.inc, r = ph >> (32u - WAV_LOG2N);
+                        double f = (double)((ph >> 8) & 0x7FFFu) / 32768.0, acc = 0;
+                        int32_t y, want, d;
+                        for (j = 0; j < WAV_NB; j++)
+                            acc += (double)g1[j] * ((1.0 - f) * ps->t[r * WAV_NL + j] + f * ps->t[(r + 1u) * WAV_NL + j]);
+                        y = (int32_t)(acc / 512.0);
+                        want = voice_amp(soft_knee(y, 24000), &m, i);
+                        d = out[i] - want;
+                        if (d < 0)
+                            d = -d;
+                        if (d > 6)
+                            bad++;
+                        if (d > lastmax)
+                            lastmax = d;
+                    }
+                }
+                bad_all += bad;
+                tested++;
+                if (bad) {
+                    snprintf(path, sizeof path, "render = naive evaluation (wave %u, note %u: %u wrong samples, worst %d)",
+                             wv ? 2u : 0u, NOTES[note], bad, lastmax);
+                    check(path, 0);
+                }
+            }
+        printf("naive render check: %u notes x 2 waves, %u wrong samples\n", tested, bad_all);
+    }
+
+    /* 7. a table switch with the resonance up: the cross-fade's product of two Q15 numbers must not wrap */
+    {
+        preset_t pr = {"RESO XF", {0, 0, 0, 100, 70, 127, 2, 0}, {0, 60, 100, 60}, 0, 0, {0}, 0};
+        pr.e[7] = 90;                                       /* with the window too: the dry cycle crosses over as well */
+        result_t a = render_phrase(&ENG_WAVELET, &pr, 0, 0, 0);
+        result_t b = render_phrase(&ENG_WAVELET, &pr, 0, 0, 2);   /* the phase flips: the tables differ most */
+        printf("cross-fade at RES 127 + WNDW: steady jump %d, switch %d (peaks %d, %d)\n", a.maxjump, b.maxjump, a.peak, b.peak);
+        check("a switch at RES 127 shows no wrapped samples (jump <= 1.5 x steady, peak <= 1.5 x steady)",
+              b.maxjump <= a.maxjump * 3 / 2 + 64 && b.peak <= a.peak * 3 / 2 + 64);
+    }
+
+    /* 7b. the cross-fade's arithmetic on tables that differ as much as they can: +A everywhere against -A everywhere */
+    {
+        track_t *t = &trk[2];
+        voice_t *v = &t->v[0];
+        wav_part_t *ps;
+        int32_t out[CTL], g1[WAV_NB], gate[WAV_NB], worst = 0;
+        double sumg = 0;
+        vmod_t m;
+        uint32_t i, j, pi = 2, bad = 0;
+        part_reset(t, E_WAV);
+        t->p[P_E4] = 127;
+        t->p[P_E5] = 100;
+        build_table(t);
+        ps = WAV_PART(t);
+        for (i = 0; i < WAV_TSIZE; i++) {
+            ps->t[i] = 16000;
+            wav_scr.t[i] = -16000;
+        }
+        wav_scr.owner = (uint8_t)(pi + 1u);
+        wav_scr.stage = WS_XF;
+        wav_xf[pi] = 8;                                     /* (WAV_XF - 8) / WAV_XF of the way: the share starts at 1/2 */
+        voice_on(t, &ENG_WAVELET, v, 48, 0);
+        memset(&m, 0, sizeof m);
+        m.pitch16 = 48 * 16;
+        m.inc = pitch_inc(48 * 16);
+        m.amp0 = m.amp1 = 32767;
+        m.shape = 64 << 8;
+        memset(out, 0, sizeof out);
+        ENG_WAVELET.render(t, v, out, CTL, &m);
+        wav_gains(t->p, (127 * 3072) / 127, m.inc, g1, gate);
+        for (j = 0; j < WAV_NB; j++)
+            sumg += g1[j];
+        for (i = 0; i < CTL; i++) {
+            double xw = (16384.0 + 64.0 * i) / 32768.0, y = 16000.0 * sumg / 512.0, yx = y + (-y - y) * xw;
+            int32_t want = voice_amp(soft_knee((int32_t)yx, 24000), &m, i), d = out[i] - want;
+            d = d < 0 ? -d : d;
+            if (d > 6)
+                bad++;
+            if (d > worst)
+                worst = d;
+        }
+        wav_scr.owner = 0;
+        wav_xf[pi] = 0;
+        printf("cross-fade arithmetic: %u wrong samples of %d, worst %d (sum of gains %.0f Q10)\n", bad, CTL, worst, sumg);
+        check("the cross-fade of opposite tables matches the double-precision value (no wrap)", bad == 0 && sumg > 2048);
+    }
+
+    /* 8. a part that leaves WAVELET and comes back plays nothing until its table is built again (no stale table) */
+    {
+        track_t *t = &trk[1];
+        int32_t out[CTL], last[NVOICE] = {0};
+        uint32_t b, loud_before = 0, loud_after = 0;
+        part_reset(t, E_WAV);
+        t->p[P_E4] = 100;
+        build_table(t);
+        voice_on(t, &ENG_WAVELET, &t->v[0], 48, 0);
+        for (b = 0; b < 20u; b++) {
+            uint32_t i;
+            render_block(t, out, b, last, 0);
+            for (i = 0; i < CTL; i++)
+                loud_before += out[i] > 100 || out[i] < -100;
+        }
+        t->engine = 0;                                      /* a visit of ANALOG: wav_tick sees a part that is not WAVELET */
+        wav_tick();
+        t->engine = (uint8_t)E_WAV;
+        check("the table is gone after a visit of another engine", !wav_valid[1]);
+        {
+            int32_t o2[CTL];
+            memset(o2, 0, sizeof o2);
+            t->v[0].s[0] = 0;
+            ENG_WAVELET.render(t, &t->v[0], o2, CTL, &(vmod_t){.pitch16 = 48 * 16, .inc = pitch_inc(48 * 16), .amp0 = 32767,
+                                                              .amp1 = 32767, .shape = 64 << 8});
+            for (b = 0; b < CTL; b++)
+                loud_after += o2[b] != 0;
+        }
+        check("a part with no table is silent, not stale", loud_before > 100 && loud_after == 0);
+    }
+
     /* 5. the anti-aliasing gates */
     {
-        int32_t g[WAV_NB];
+        int32_t g[WAV_NB], gt[WAV_NB];
         int16_t p[P_COUNT] = {0};
         p[P_E6] = 2;
-        wav_gains(p, 12 << 8, pitch_inc(2047), g);     /* ~12.5 kHz: 1.7 harmonics fit */
+        wav_gains(p, 12 << 8, pitch_inc(2047), g, gt);     /* ~12.5 kHz: 1.7 harmonics fit */
         check("top pitch: band 1 on", g[0] >= 1000);
         check("top pitch: band 2 (harmonics 1..2) partly", g[1] > 0 && g[1] < 1024);
         check("top pitch: bands 3.. off", g[2] == 0 && g[8] == 0);
-        wav_gains(p, 12 << 8, pitch_inc(69 * 16), g);  /* A4: 50 harmonics fit */
+        wav_gains(p, 12 << 8, pitch_inc(69 * 16), g, gt);  /* A4: 50 harmonics fit */
         check("A4: bands 1..6 on", g[0] >= 1000 && g[5] >= 1000);
         check("A4: band 7 (32..64) partly", g[6] > 0 && g[6] < 1024);
         check("A4: bands 8, 9 off", g[7] == 0 && g[8] == 0);
-        wav_gains(p, 4 << 8, pitch_inc(69 * 16), g);   /* the filter at band 4, LP 24 dB / band */
+        wav_gains(p, 4 << 8, pitch_inc(69 * 16), g, gt);   /* the filter at band 4, LP 24 dB / band */
         check("LP: band 4 at -4 dB (slope x softplus 0)", g[3] > 500 && g[3] < 800);
         check("LP: band 6 well below", g[5] < g[3] / 8);
         p[P_E5] = 127;
-        wav_gains(p, 4 << 8, pitch_inc(69 * 16), g);
+        wav_gains(p, 4 << 8, pitch_inc(69 * 16), g, gt);
         check("RES: +20 dB at the cutoff (24 - 4)", g[3] > 8000 && g[3] < 12000);
     }
     printf("%s (%d failures)\n", fails ? "FAILED" : "OK", fails);

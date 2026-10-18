@@ -3,7 +3,7 @@
 [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-blue.svg)](LICENSE)
 
 **OKTOWAVE** is an alternative firmware for the M-VAVE FM-1 pocket synthesizer: Hügelton Instruments'
-[Felucca](https://github.com/hugelton/Felucca) 1.6.1 (four tracks, 14 synthesis engines, sequencer, arpeggiator,
+[Felucca](https://github.com/hugelton/Felucca) 1.6.1 (four tracks, 13 synthesis engines, sequencer, arpeggiator,
 effects, USB audio and MIDI) plus one more engine, **WAVELET**: engine A (subtractive) of the
 [Wavelet Synthesizer](https://github.com/PierreArnaudGUYOT/Free-Wavelet-Synthesizer-VST) by Pierre Arnaud GUYOT
 (OktoPierre), rewritten in fixed point for the FM-1's processor, with 69 of its presets.
@@ -18,8 +18,10 @@ filter (low-, high- or band-pass in bands, with slope and resonance) and a windo
 - **Build**: [BUILDING.md](BUILDING.md) (Felucca's). The JieLi toolchain is Linux only, so the build and the tests run
   on GitHub Actions: [.github/workflows/build.yml](.github/workflows/build.yml)
 
-> **Version 0.1 has not been run on an FM-1 yet.** Built with the official toolchain, tested on computers only
-> (Felucca's host suite, the engine's standalone test against a floating-point reference, the browser build).
+> **Version 0.1 has not been run on an FM-1 yet.** Built with the official toolchain on GitHub Actions and tested on
+> computers only: the engine's standalone test (every wave and wavelet, the presets, a sample-for-sample check of the render,
+> the cross-fade, a floating-point reference) and the browser build; Felucca's own host suite runs in the workflow too (its
+> baselines for the new engine are being regenerated, see the workflow runs).
 > Installing a custom firmware is at your own risk: back up first and keep the way back to the official firmware.
 
 ## What is where
@@ -32,20 +34,29 @@ filter (low-, high- or band-pass in bands, with slope and resonance) and a windo
 | `tests/wavelet_test.c`, `tools/wavelet_ref.js` | standalone engine test and the floating-point reference |
 | everything else | Felucca 1.6.1; `firmware/engines/` is the Felucca-Engines submodule (MIT) |
 
-Changes to Felucca's own files are small: engine table, order and power-on parts (`engines.c`, `core.h`), the tick in
-`fx.c`, the version string, package names, installer and emulator pages, `tests/target_budget.py`.
+Changes to Felucca's own files are small: engine table, order and power-on parts (`engines.c`, `core.h`, `main.c`), the tick
+in `fx.c`, engine names, costs, MIDI CC and categories (`params.c`, `fx.c`, `midi_control.c`, `category.c`), the favourites
+and MIDI-learn guards (`favorites.c`, `midi_learn.c`), the version string, package names, installer and emulator pages,
+`tests/target_budget.py`. Felucca's own power-on sounds stay what projects of older formats and the host tests see.
 
 ## Engine test (any C compiler and Node.js)
 
 ```sh
+mkdir -p build/host
 python3 firmware/engines/tools/gen_engine_tables.py build/host/fe_tables.h
 cc -O2 -std=gnu99 -I build/host -o build/host/wavelet_test tests/wavelet_test.c
 build/host/wavelet_test build/host
 node tools/wavelet_ref.js build/host
 ```
 
+## How it was made
+
+The WAVELET engine, its tools, tests, manual and the changes to Felucca were written with the help of an AI assistant
+(Claude, Anthropic) under the direction of Pierre Arnaud GUYOT, and reviewed by a second, independent AI agent (its
+findings and the fixes are in the git history). Felucca's own README has an AI disclaimer of its own; see Felucca's repository.
+
 ## Licence
 
 GPL-3.0-only as Felucca ([LICENSE](LICENSE), [LICENSING.md](LICENSING.md)); the WAVELET engine and tools are
-Copyright (C) 2026 Pierre Arnaud GUYOT. M-VAVE and FM-1 are trademarks of their owners; this project is not
+Copyright (C) 2026 Pierre Arnaud GUYOT; Felucca is Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments. M-VAVE and FM-1 are trademarks of their owners; this project is not
 affiliated with or endorsed by them or by Hügelton Instruments.

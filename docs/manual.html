@@ -43,7 +43,7 @@
 <a href="https://github.com/hugelton/Felucca">Felucca</a> 1.6.1 with one more synthesis engine, <b>WAVELET</b>, the
 subtractive engine of the <a href="https://github.com/PierreArnaudGUYOT/Free-Wavelet-Synthesizer-VST">Wavelet
 Synthesizer</a> by Pierre Arnaud GUYOT (OktoPierre), rewritten for the FM-1's processor, with 69 of its presets.
-Everything else is Felucca: four tracks, its fourteen engines, the sequencer, arpeggiator, chords, effects, USB
+Everything else is Felucca: four tracks, its thirteen engines, the sequencer, arpeggiator, chords, effects, USB
 audio and MIDI. This manual covers what OKTOWAVE adds; for the rest, Felucca's
 <a href="https://github.com/hugelton/Felucca/wiki/Home">wiki</a> is the reference.</p>
 
@@ -74,7 +74,7 @@ starts, recovery needs <a href="https://github.com/kurogedelic/FM-1-transporter"
 <ol>
 <li>Connect the FM-1 to the computer with a USB cable and switch it on.</li>
 <li>Open the <a href="https://pierrearnaudguyot.github.io/FM1-Oktowave-Firmware/">web installer</a> in Chrome or
-Edge (Web MIDI is needed; Firefox and Safari do not have it).</li>
+Edge (Web MIDI is needed: recent Firefox asks for a permission, Safari does not have it).</li>
 <li>Press <b>Install</b> and follow the page. The FM-1 restarts into OKTOWAVE; the menu shows
 <code>OKTOWAVE v0.1</code>.</li>
 </ol>
@@ -134,9 +134,10 @@ small details first, then its shape, down to one atom. <b>PHASE</b> shifts the s
 the transform: the transform is not shift-invariant, so the same wave gives other atoms, and another timbre.
 The <b>window</b> (WNDW) cross-fades, inside a raised-cosine bump that covers half the cycle, between the dry
 cycle and the filtered one; SHAPE (the envelope's and the LFO's SHP amounts) moves the bump round the cycle.</p>
-<p>Everything runs in fixed point on the FM-1's two cores' worth of integer arithmetic: the tables are 16-bit,
-the gains 10-bit fractions, the transforms 20-bit samples with 28-bit coefficients. A voice costs about as much
-as an ANALOG voice.</p>
+<p>Everything runs in fixed point, with no floating point: the tables are 16-bit, the gains 10-bit fractions, the
+transforms 20-bit samples with 28-bit coefficients. A WAVELET voice costs about twice an ANALOG voice (measured on a
+computer, 1.6 to 2.3 times; not yet measured on the FM-1), a little more while a new table fades in. The two cores share
+the parts as for every engine; the table builds run on the first core, a slice at a time.</p>
 
 <h2 id="params">5. The parameters</h2>
 <table>
@@ -183,13 +184,13 @@ window and its position. What is reduced or left out:</p>
 <table>
 <thead><tr><th>In the VST</th><th>On the FM-1</th></tr></thead>
 <tbody>
-<tr><td>2048-sample cycle, 11 bands, 11 band-limited mip levels per layer</td><td>512-sample cycle, 9 bands (harmonics 1 .. 256; the VST's bands 10 and 11 would be above 10 kHz on any note above 40 Hz). Anti-aliasing is by band: a band whose harmonics would pass Nyquist fades out, one octave coarse, so the top octave of a very high note may alias a little.</td></tr>
+<tr><td>2048-sample cycle, 11 bands, 11 band-limited mip levels per layer</td><td>512-sample cycle, 9 bands (harmonics 1 .. 256; the VST's bands 10 and 11 would be above 10 kHz on any note above 40 Hz). <b>Anti-aliasing is much weaker than in the VST.</b> There are no mip levels: a band whose harmonics would pass Nyquist is faded out, one octave coarse, and the dry cycle under the window is gated the same way. The wavelet layers themselves are not band-limited, so edgy waves (SAW and PLS with HAAR or DB2) alias audibly on high notes: measured on a computer, the energy off the harmonics is about 30 dB under the harmonics at C3 and 10 to 16 dB under at C6 to C8 (ANALOG's saw: 48 down to 34 dB). Smoother wavelets (DB4 and up) and lower cutoffs are cleaner. A per-pitch table is the planned fix.</td></tr>
 <tr><td>Engine B (additive), A/B MIX, WAVELET MORPH, LFO 2, SOURCE PHASE moved by LFO 2, the sub oscillator, unison inside the voice, the chorus / delay / reverb / limiter of the plug-in</td><td>Not there. Felucca's own LFO, matrix, UNISON voice mode and effects replace what they can. The presets of the VST's "Source Phase" section that needed LFO 2 (the "Shift" sounds) are left out; the static ones are in.</td></tr>
-<tr><td>KEY TRK 0 .. 100 %, VEL AMT, the window's WIDTH, POSITION knob, a separate filter envelope</td><td>Key tracking is 100 %, the window is half a cycle wide and its position is SHAPE (the envelope's / LFO's SHP), the filter envelope is the amp envelope (ENV DEST FLT). Velocity reaches the cutoff through the MOD matrix.</td></tr>
+<tr><td>KEY TRK 0 .. 100 %, VEL AMT, the window's WIDTH, POSITION knob, a separate filter envelope</td><td>Key tracking is 100 %, the window is a quarter-cycle each side of its centre (above about 1.4 kHz it narrows by half, abruptly), its centre starts at the cycle's start (the VST's POSITION 0) and moves with the SHP amounts, the filter envelope is the amp envelope (ENV DEST FLT). Velocity reaches the cutoff through the MOD matrix. The presets that used POSITION, the window's width or its LFO (a handful) differ from the VST's.</td></tr>
 <tr><td>SLOPE 6 .. 96 dB/band, any value; band-reject</td><td>Six slopes (12 18 24 36 48 96) and three types; the presets took the nearest slope (no preset used band-reject).</td></tr>
-<tr><td>SPARSITY counts atoms down to 10<sup>−9</sup> of the largest</td><td>The 20-bit atoms stop at 2<sup>−18</sup> (−108 dB): with the smoother wavelets the knob's law differs slightly, so a VST preset's SPARSITY value may thin a little more or less here.</td></tr>
-<tr><td>Tables rebuilt in a few milliseconds on a computer</td><td>3 to 50 ms (HAAR .. DB20), in slices inside the audio interrupt, with a 12 ms cross-fade; while the knob keeps turning, the build starts over.</td></tr>
-<tr><td>Double precision</td><td>16-bit tables, 10-bit gains, 20-bit transforms: the engine's test shows the tables within −72 dB of the floating-point reference.</td></tr>
+<tr><td>SPARSITY: K = N<sup>1−s</sup> of the N non-zero atoms of a 2047-atom transform, counted down to 10<sup>−9</sup> of the largest</td><td>N counts the atoms of a 511-atom transform, down to 2<sup>−18</sup> (−108 dB): the same law on fewer atoms, so a VST preset's SPARSITY value keeps fewer atoms here (the sound thins a little earlier).</td></tr>
+<tr><td>Tables rebuilt in a few milliseconds on a computer</td><td>About 6 to 64 blocks of 11.6 ms-per-32-samples audio time (HAAR .. DB20: roughly 20 to 190 ms on the FM-1 if a slice keeps its share), in slices inside the audio interrupt, then a fade of 16 blocks of 512 samples (about 190 ms); while a knob keeps turning, the build starts over. The old sound plays meanwhile. Not measured on the FM-1.</td></tr>
+<tr><td>Double precision</td><td>16-bit tables, 10-bit gains, 20-bit transforms: the engine's test shows the tables within about −72 dB of a floating-point re-implementation of the same algorithm (the cases where two atoms tie for the last place kept by SPARSITY are not compared). The gain law was also compared with the VST's filter code on 1368 settings: within 0.5 to 1.9 dB where the gain is above −48 dB.</td></tr>
 </tbody>
 </table>
 
@@ -197,7 +198,7 @@ window and its position. What is reduced or left out:</p>
 <p>69 of the Wavelet Synthesizer's presets (beta 0.7), engine A only: first the 15 of OktoPierre's 22 TOP Sounds that this engine can play
 (the other seven use the VST's additive engine B, which the FM-1 does not have), then the rest by category (★ = his vote of the
 listening tests). Silk Strings is an A/B preset; here it is its A part. The names are shortened to the FM-1's ten characters; the
-VST's name is beside each. The sounds that used the VST's unison, sub oscillator, LFO 2 or morph are plainer
+VST's name is beside each. The window's position, width and LFO of a few presets are not carried over (section 7). The sounds that used the VST's unison, sub oscillator, LFO 2 or morph are plainer
 here; UNISON on the VOICE page brings some of it back.</p>
 <table>
 <thead><tr><th>FM-1</th><th>Wavelet Synthesizer</th><th></th></tr></thead>
@@ -306,12 +307,14 @@ For a bass with a fixed-frequency feel, play it low with a low CUT.</li>
 </ul>
 
 <h2 id="build">10. Build and test it yourself</h2>
+<p>The power-on tracks and their patterns differ from Felucca's: that is OKTOWAVE's own (a project saved by Felucca, and the host tests, still start from Felucca's defaults). <b>Favourites</b> do not exist for the WAVELET engine (Felucca's favourites table has no room for a fifteenth engine).</p>
 <p>The source is on <a href="https://github.com/PierreArnaudGUYOT/FM1-Oktowave-Firmware">GitHub</a>. The firmware
 builds like Felucca (<code>BUILDING.md</code>: JieLi's pi32v2 clang 4.0.1, Linux x86-64; three files of the
 Apache-2.0 AC79 SDK; Python with Pillow and fontTools). The repository's GitHub Actions workflow does all of it
 on a Linux runner and publishes the package, the test results, the browser build and this manual.</p>
 <p>The engine alone needs only a C compiler and Node.js:</p>
-<pre>python3 firmware/engines/tools/gen_engine_tables.py build/host/fe_tables.h
+<pre>mkdir -p build/host
+python3 firmware/engines/tools/gen_engine_tables.py build/host/fe_tables.h
 cc -O2 -std=gnu99 -I build/host -o build/host/wavelet_test tests/wavelet_test.c
 build/host/wavelet_test build/host     # every wave x wavelet, the presets (writes preset_NN.wav), the cross-fade, the anti-aliasing
 node tools/wavelet_ref.js build/host   # the fixed-point tables against the floating-point reference</pre>

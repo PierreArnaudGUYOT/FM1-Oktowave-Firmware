@@ -20,16 +20,15 @@ static int wav_want(const track_t *t, int16_t *w)        /* E0 .. E3 of a part, 
     return d;
 }
 
-static void wav_copy_table(wav_part_t *ps, const wav_scratch_t *s)
+static void wav_copy_table(uint32_t p, wav_part_t *ps, const wav_scratch_t *s)
 {
-    const uint32_t *src = (const uint32_t *)(const void *)s->t;
-    uint32_t *dst = (uint32_t *)(void *)ps->t, i;
-    for (i = 0; i < WAV_TSIZE / 2u; i++)
-        dst[i] = src[i];
+    uint32_t i;
+    for (i = 0; i < WAV_TSIZE; i++)
+        ps->t[i] = s->t[i];
     for (i = 0; i < 4u; i++)
-        ps->snap[i] = s->snap[i];
-    ps->valid = 1;
-    ps->xf = 0;
+        wav_snap[p][i] = s->snap[i];
+    wav_valid[p] = 1;
+    wav_xf[p] = 0;
 }
 
 /* once per audio block, on core 0 before the parts render (fx.c mix_block): the builds and the switches */
@@ -44,15 +43,17 @@ static void wav_tick(void)
         if (ENGINES[eng_idx(t->engine)] != &ENG_WAVELET) {
             if (s->owner == p + 1u)                     /* it left: the scratch is free */
                 s->owner = 0;
+            wav_valid[p] = 0;                           /* its table goes with it: back, it is rebuilt (silent a few ms) */
+            wav_xf[p] = 0;
             continue;
         }
         ps = WAV_PART(t);
         if (s->owner == p + 1u) {
             if (s->stage == WS_XF) {
-                if (ps->xf > 1u)
-                    ps->xf--;
+                if (wav_xf[p] > 1u)
+                    wav_xf[p]--;
                 else {                                  /* the fade is over: the new table takes the place */
-                    wav_copy_table(ps, s);
+                    wav_copy_table(p, ps, s);
                     s->owner = 0;
                 }
                 continue;
@@ -66,17 +67,17 @@ static void wav_tick(void)
             }
             wav_build_step(s, WAV_QUANTUM);
             if (s->stage == WS_DONE) {
-                if (!ps->valid) {                       /* nothing to fade from */
-                    wav_copy_table(ps, s);
+                if (!wav_valid[p]) {                       /* nothing to fade from */
+                    wav_copy_table(p, ps, s);
                     s->owner = 0;
                 } else {
                     s->stage = WS_XF;
-                    ps->xf = WAV_XF;
+                    wav_xf[p] = WAV_XF;
                 }
             }
         } else if (!s->owner) {
-            want[0] = ps->snap[0]; want[1] = ps->snap[1]; want[2] = ps->snap[2]; want[3] = ps->snap[3];
-            if (wav_want(t, want) || !ps->valid) {
+            want[0] = wav_snap[p][0]; want[1] = wav_snap[p][1]; want[2] = wav_snap[p][2]; want[3] = wav_snap[p][3];
+            if (wav_want(t, want) || !wav_valid[p]) {
                 uint32_t i;
                 for (i = 0; i < 4u; i++)
                     s->snap[i] = want[i];

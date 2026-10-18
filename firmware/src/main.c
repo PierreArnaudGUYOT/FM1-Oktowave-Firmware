@@ -98,7 +98,7 @@ static void fm1_fault(const fm1_crash_t *c)
     fm1_reboot();
 }
 
-/* power-on: the parts with their default sounds (TRK_DEF); the sequencers empty */
+/* power-on: the parts with their default sounds (TRK_DEF; OKTOWAVE_BOOT: TRK_BOOT, with patterns); Felucca's sequencers are empty */
 static void felucca_init(void)
 {
     uint32_t i;
@@ -110,15 +110,15 @@ static void felucca_init(void)
     for (i = 0; i < NTRK; i++) {
         track_t *t = &trk[i];
         track_defaults(t);
-        set_engine_of(t, TRK_DEF[i][0]);
-        apply_preset_to(t, TRK_DEF[i][1]);    /* with its sends */
+        set_engine_of(t, BOOT_DEF[i][0]);
+        apply_preset_to(t, BOOT_DEF[i][1]);    /* with its sends */
         t->engine = t->eng_req;
         eng_mem_claim(t);                     /* (zeros already: no note can come before) */
         track_defaults_steps(t);              /* (a sound load never touches them) */
-        if (TRK_DEF[i][2])
-            load_pat16(t, PATTERNS[TRK_DEF[i][2] - 1u].note, PATTERNS[TRK_DEF[i][2] - 1u].flags);
+        if (BOOT_DEF[i][2])
+            load_pat16(t, PATTERNS[BOOT_DEF[i][2] - 1u].note, PATTERNS[BOOT_DEF[i][2] - 1u].flags);
         pat_sig[i] = steps_sig(t);            /* a default pattern, not the user's */
-        pat_last[i] = TRK_DEF[i][2];
+        pat_last[i] = BOOT_DEF[i][2];
     }
     undo_depth--;
     song.sel = 0;

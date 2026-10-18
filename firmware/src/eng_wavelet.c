@@ -39,7 +39,8 @@
  * differ from its table's, restarts it when they move again, and when it is done the part cross-fades from
  * its table to the new one over WAV_XF blocks, then the new table is copied over the old (in wav_tick: no
  * part renders while it runs). A part with no table yet (power-on, after another engine) is silent until
- * its first build (a few ms) and takes it without a fade. Only wav_tick touches wav_scr's state; the renders
+ * its first build (a few ms) and takes it without a fade (also after a visit of any other engine). Only wav_tick
+ * touches wav_scr's state; the renders
  * read wav_scr.t while the part cross-fades.
  *
  * Fixed point: table samples Q14 (the source's peak = 16384); band gains Q10 (1024 = 0 dB, 16384 = +24 dB,
@@ -72,10 +73,13 @@ enum { WW_SAW, WW_SQR, WW_PLS, WW_TRI, WW_SIN, WW_NOIS };
 typedef struct {
     int16_t t[WAV_TSIZE];                           /* the table: row i = the layers at sample i, Q14 */
     int16_t g0[NVOICE][WAV_NB];                     /* each voice's band gains at the end of its last block, Q10 */
-    int16_t snap[4];                                /* E0 .. E3 the table was built from */
-    uint8_t valid;                                  /* 1: t[] holds the table of snap */
-    uint8_t xf;                                     /* cross-fading to wav_scr.t: blocks left (WAV_XF .. 1), 0 none */
 } wav_part_t;
+/* what says whether t[] is the table of the part's sound lives outside the engine memory (another engine may use
+ * that region while the part plays it, and a visit of ANALOG, which has no memory of its own, must not leave an old
+ * table valid): wav_tick clears these as soon as the part's engine is not WAVELET */
+static int16_t wav_snap[NPART][4];                  /* E0 .. E3 the table was built from */
+static uint8_t wav_valid[NPART];                    /* 1: the part's t[] holds the table of wav_snap */
+static uint8_t wav_xf[NPART];                       /* cross-fading to wav_scr.t: blocks left (WAV_XF .. 1), 0 none */
 ENG_MEM_FITS("WAVELET", sizeof(wav_part_t));
 #define WAV_PART(t) ((wav_part_t *)ENG_MEM((uint32_t)((t) - trk)))
 
@@ -407,7 +411,7 @@ static int32_t wav_db_to_q10(int32_t dbq8)              /* 10^(dB / 20) in Q10, 
 /* the nine band gains (Q10) of a voice: the scale filter at cutq8 (bands, Q8), then the bands whose
  * harmonics would pass Nyquist at this pitch faded out (band b: fully there while 2^(b-1) harmonics
  * fit, gone when 2^(b-2) do not: the anti-aliasing, one octave coarse) */
-static void wav_gains(const int16_t *p, int32_t cutq8, uint32_t inc, int32_t *g)
+static void wav_gains(const int16_t *p, int32_t cutq8, uint32_t inc, int32_t *g, int32_t *gate)
 {
     uint32_t flt = (uint32_t)clamp(p[P_E6], 0, 17), type = flt / 6u, j;
     int32_t slope = WAV_SLOPE[flt % 6u], resq8 = clamp(p[P_E5], 0, 127) * 6144 / 127;
@@ -425,6 +429,7 @@ static void wav_gains(const int16_t *p, int32_t cutq8, uint32_t inc, int32_t *g)
         if (r < 512u)
             gain = r <= 256u ? 0 : (gain * (int32_t)((r - 256u) << 7)) >> 15;
         g[j] = gain;
+        gate[j] = r >= 512u ? 1024 : r <= 256u ? 0 : (int32_t)((r - 256u) << 2);   /* the same fade, alone (Q10) */
     }
 }
 
@@ -450,15 +455,17 @@ static inline int32_t wav_row(const int16_t *r, const int32_t *g)
            g[7] * r[7] + g[8] * r[8];
 }
 typedef struct { uint32_t i; int32_t s0, s1; } wav_rd_t;   /* the rows last summed: row i and i + 1 */
+#define WAV_RD_NONE 0x7FFFFFFFu                          /* no rows summed (its + 1 is no row either) */
 
-/* one sample of a table at phase ph: the filtered sum, Q15; *dry the DRY cycle, Q15. The two rows the sample
- * sits between are summed once: a sample on the same rows as the last one (below 86 Hz) or one row on (up to
- * 172 Hz) reuses what was summed (c), so the nine multiplies run once or twice a sample, not twice always */
-static inline int32_t wav_read(const int16_t *T, uint32_t ph, const int32_t *g, int32_t *dry, wav_rd_t *c)
+/* one sample of a table at phase ph with band gains g (Q10): the sum, Q15. The two rows the sample sits between
+ * are summed once: a sample on the same rows as the last one (below 86 Hz) or one row on (up to 172 Hz) reuses what
+ * was summed (c), so the nine multiplies run once or twice a sample, not twice always. Called with the filter's
+ * gains for the sound and, under the window, with the anti-aliasing gate alone for the dry cycle */
+static inline int32_t wav_read(const int16_t *T, uint32_t ph, const int32_t *g, wav_rd_t *c)
 {
     uint32_t i = ph >> (32u - WAV_LOG2N);
     const int16_t *r = T + i * WAV_NL, *r1 = r + WAV_NL;
-    int32_t fr = (int32_t)((ph >> 8) & 0x7FFFu), s0, s1, d0 = r[WAV_DRY], d1 = r1[WAV_DRY];
+    int32_t fr = (int32_t)((ph >> 8) & 0x7FFFu), s0, s1;
     if (i == c->i) {
         s0 = c->s0;
         s1 = c->s1;
@@ -469,53 +476,60 @@ static inline int32_t wav_read(const int16_t *T, uint32_t ph, const int32_t *g, 
         c->s0 = s0;
         c->s1 = s1;
     }
-    *dry = (d0 << 1) + (((d1 - d0) * (fr >> 1)) >> 13);
     return (s0 >> 9) + (int32_t)(((int64_t)(s1 - s0) * fr) >> 24);
 }
 
 static void wavelet_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
 {
     wav_part_t *ps = WAV_PART(t);
+    uint32_t pi = (uint32_t)(t - trk) % NPART;
     const int16_t *p = t->p;
     const int16_t *T = ps->t, *T2 = 0;
     int16_t *g0 = ps->g0[(uint32_t)(v - t->v) % NVOICE];
-    int32_t g1[WAV_NB], g[WAV_NB];
+    int32_t g1[WAV_NB], g[WAV_NB], gt[WAV_NB];
     int32_t cutq8 = (clamp(p[P_E4], 0, 127) * 3072 + m->cutoff * 24) / 127;
     int32_t pd = clamp(p[P_E7], 0, 127) * 258;          /* WNDW depth, Q15 */
     uint32_t ph = v->ph[0], inc = m->inc, i, j;
-    uint32_t pc = (uint32_t)clamp(m->shape, 0, 127 << 8) << 17;   /* the window's centre (SHAPE) */
+    uint32_t pc = (uint32_t)(m->shape - (64 << 8)) << 17;   /* the window's centre: 0 at SHAPE's default (the VST's POSITION 0);
+                                                         * the SHP amounts move it, a whole cycle over the knob's range */
     uint32_t hwsh = 2;                                  /* the window's half width: 2^(32 - hwsh), a quarter cycle */
     int32_t xbase = 0, xstep = 0;                       /* cross-fade: the new table's share, Q15, per sample */
-    wav_rd_t c1 = {0xFFFFFFFFu, 0, 0}, c2 = {0xFFFFFFFFu, 0, 0};
-    if (!ps->valid)
+    wav_rd_t c1 = {WAV_RD_NONE, 0, 0}, c2 = c1, d1 = c1, d2 = c1;   /* the filtered sound's rows, the dry cycle's */
+    int32_t gate[WAV_NB];
+    if (!wav_valid[pi])
         return;
-    wav_gains(p, cutq8, inc, g1);
+    wav_gains(p, cutq8, inc, g1, gate);
     if (!v->s[0]) {
         for (j = 0; j < WAV_NB; j++)
             g0[j] = (int16_t)g1[j];
         v->s[0] = 1;
     }
-    if (ps->xf && wav_scr.owner == (uint32_t)(t - trk) + 1u && wav_scr.stage == WS_XF) {
+    if (wav_xf[pi] && wav_scr.owner == pi + 1u && wav_scr.stage == WS_XF) {
         T2 = wav_scr.t;
-        xbase = (int32_t)(WAV_XF - ps->xf) * (32768 / (int32_t)WAV_XF);
+        xbase = (int32_t)(WAV_XF - wav_xf[pi]) * (32768 / (int32_t)WAV_XF);
         xstep = (32768 / (int32_t)WAV_XF) / (int32_t)(n ? n : 1u);
     }
     while (hwsh > 1u && (inc >> (29u - hwsh)) != 0u)    /* at least 8 samples each side at high pitches */
         hwsh--;
     for (i = 0; i < n; i++) {
-        int32_t y, dry, y2, dry2;
+        int32_t y, dry = 0;
         if (!(i & 7u)) {                                /* the gains: four steps over the block */
             int32_t q = (int32_t)(i >> 3) + 1;
-            for (j = 0; j < WAV_NB; j++)
+            for (j = 0; j < WAV_NB; j++) {
                 g[j] = g0[j] + (((g1[j] - g0[j]) * q) >> 2);
-            c1.i = c2.i = 0xFFFFFFFFu;                  /* (the sums are of the old gains) */
+                gt[j] = gate[j];
+            }
+            c1.i = c2.i = d1.i = d2.i = WAV_RD_NONE;    /* (the sums are of the old gains) */
         }
-        y = wav_read(T, ph, g, &dry, &c1);
+        y = wav_read(T, ph, g, &c1);
+        if (pd)                                         /* the dry cycle, band-limited by the gate alone */
+            dry = wav_read(T, ph, gt, &d1);
         if (T2) {
             int32_t xw = xbase + (int32_t)i * xstep;
-            y2 = wav_read(T2, ph, g, &dry2, &c2);
-            y += ((y2 - y) * xw) >> 15;
-            dry += ((dry2 - dry) * xw) >> 15;
+            /* (64 bits: the difference of two Q15 values times a Q15 share can pass 2^31) */
+            y += (int32_t)(((int64_t)(wav_read(T2, ph, g, &c2) - y) * xw) >> 15);
+            if (pd)
+                dry += (int32_t)(((int64_t)(wav_read(T2, ph, gt, &d2) - dry) * xw) >> 15);
         }
         if (pd) {                                       /* the window: dry outside, the filtered sum inside */
             uint32_t d = ph - pc;

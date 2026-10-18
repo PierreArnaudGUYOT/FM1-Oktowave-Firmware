@@ -200,9 +200,17 @@ static const struct {
 #define NPATTERNS (sizeof PATTERNS / sizeof PATTERNS[0])
 
 /* the parts at power-on (engine, preset, PATTERNS[n - 1] in the sequencer, 0 = empty: all are): bass, pad, lead, drums */
-static const uint8_t TRK_DEF[NPART][3] = {{ENGI_WAVELET, WP_REESE_SUB, 14}, {ENGI_WAVELET, WP_WARM_PAD, 16},
-                                          {ENGI_WAVELET, WP_PULSE_LEAD, 15}, {ENGI_DRUM, 0, 12}}; /* OKTOWAVE: WAVELET
-                                                                       * REESE SUB + OKTOBASS, WARM PAD + OKTOCHRD, PULSE LEAD + OKTOLEAD, DRUM KIT + BEAT
-                                                                       * (all in C minor, press PLAY); Felucca: ANALOG ACID,
-                                                                       * FM6 PAD (was DIGITAL PAD), LOFI PULSE LD, DRUM KIT */
+static const uint8_t TRK_DEF[NPART][3] = {{0, 4, 0}, {ENGI_FM6, 4, 0}, {3, 0, 0}, {ENGI_DRUM, 0, 0}}; /* ANALOG ACID,
+                                                                       * FM6 PAD (was DIGITAL PAD), LOFI PULSE LD, DRUM KIT: Felucca's, what a project
+                                                                       * of an older format falls back to (project.c) and what the host tests expect */
+/* OKTOWAVE: the instrument's power-on tracks (felucca.c and the browser build define OKTOWAVE_BOOT; the host tests do not,
+ * so they see Felucca's): all in C minor, press PLAY. WAVELET REESE SUB + OKTOBASS, WARM PAD + OKTOCHRD, PULSE LEAD +
+ * OKTOLEAD (two of OktoPierre's TOP Sounds), DRUM KIT + BEAT */
+static const uint8_t TRK_BOOT[NPART][3] = {{ENGI_WAVELET, WP_REESE_SUB, 14}, {ENGI_WAVELET, WP_WARM_PAD, 16},
+                                           {ENGI_WAVELET, WP_PULSE_LEAD, 15}, {ENGI_DRUM, 0, 12}};
+#ifdef OKTOWAVE_BOOT
+#define BOOT_DEF TRK_BOOT
+#else
+#define BOOT_DEF TRK_DEF
+#endif
 static uint32_t trk_def_engine(uint32_t i) { return TRK_DEF[i % NPART][0]; }

@@ -1687,7 +1687,7 @@ function makeMockDevice(opt = {}) {
     E("MIDI", ["USB", "TRS"], 0), E("SYNC", NDASH, 0), E("ROUT", ["CH1-4", "SEL", "CH5-8", "CH9-12", "CH13-16", "TRACK"], 0), D("CPU", F.INT, 0, 0, 0),
     D("SLOT", F.INT, 1, 4, 1), E("NAME", NDASH, 0), E("LOAD", NGO, 0), E("SAVE", NGO, 0),
     E("ENG", ["ANALOG", "-", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL",
-      "GRAIN", "PHYS", "DRUM", "NOISE", "FM6", "SLICE"], 0), E("SET", NGO, 0),
+      "GRAIN", "PHYS", "DRUM", "NOISE", "FM6", "SLICE", "WAVELET"], 0), E("SET", NGO, 0),
     E("CLRSQ", NGO, 0), E("INIT", NGO, 0),
     E("TYPE", ["ROOM", "SPRING", "HALL"], 2),       /* G_RTYPE (id 24, was G_DRCH): the reverb's model (HALL: 1.2) */
     D("-", F.INT, 0, 0, 0), D("-", F.INT, 0, 0, 0),   /* G_DRLVL, G_DRREV: inert since 1.0 */
@@ -1774,6 +1774,80 @@ function makeMockDevice(opt = {}) {
         E("DIV", ["4", "8", "16", "32", "AUTO", "MAN"], 2), D("START", F.INT, 0, 31, 0), D("PTCH", F.SEMI, -24, 24, 0),
         E("MODE", ["ONE", "GATE", "LOOP"], 0), E("REV", ["OFF", "ON"], 0), D("DCAY", F.TIME, 0, 127, 127), D("TONE", F.INT, 0, 127, 127)],
       presets: [P("CHOP", [0, 2, 0, 0, 0, 0, 127, 127], [0, 127, 127, 30], 0, 9), P("STUTTER", [0, 1, 0, 0, 1, 0, 90, 110], [0, 127, 127, 12], 0, 10)] },
+    /*WAVELET-BEGIN*/
+    { name: "WAVELET", titles: ["ATOMS", "SCALE"], edit: [E("WAVE", ["SAW","SQR","PLS","TRI","SIN","NOIS"], 0), E("WVLT", ["HAAR","DB2","DB4","DB8","SYM8","COIF3","DB20"], 2),
+        D("PHAS", F.PCT, 0, 127, 0), D("SPRS", F.PCT, 0, 127, 0), D("CUT", F.INT, 0, 127, 127), D("RES", F.PCT, 0, 127, 0),
+        E("FLT", ["LP12","LP18","LP24","LP36","LP48","LP96","HP12","HP18","HP24","HP36","HP48","HP96","BP12","BP18","BP24","BP36","BP48","BP96"], 2), D("WNDW", F.PCT, 0, 127, 0)],
+      presets: [P("NOISE WASH", [5, 6, 0, 31, 53, 74, 14, 0], [43, 83, 127, 110], 0, 0),
+        P("SIREN SWP", [0, 2, 0, 0, 64, 95, 14, 0], [15, 83, 127, 79], 0, 0),
+        P("WAVLT LEAD", [0, 3, 0, 0, 48, 48, 2, 0], [15, 83, 102, 79], 1, 0),
+        P("WAVE BRASS", [0, 6, 0, 0, 35, 42, 3, 0], [51, 83, 114, 76], 0, 0),
+        P("WAVE RISER", [5, 6, 0, 0, 53, 74, 14, 0], [95, 83, 127, 108], 0, 0),
+        P("WARM PAD", [0, 5, 0, 0, 53, 21, 2, 0], [88, 95, 108, 100], 0, 0),
+        P("ATTACK LD", [0, 6, 0, 0, 32, 32, 3, 0], [15, 83, 102, 79], 1, 0),
+        P("DUB ECHO", [2, 2, 37, 0, 53, 53, 2, 0], [15, 83, 102, 79], 1, 0),
+        P("PULSE LEAD", [2, 5, 24, 0, 32, 32, 3, 0], [15, 83, 102, 79], 1, 0),
+        P("CELLOS", [0, 6, 0, 0, 53, 0, 1, 0], [76, 83, 114, 90], 0, 0),
+        P("SILK STR", [0, 6, 0, 0, 74, 0, 1, 0], [92, 83, 114, 102], 0, 0),
+        P("SPICCATO", [0, 3, 0, 0, 48, 0, 2, 0], [15, 76, 0, 69], 0, 0),
+        P("SHIMMER ST", [0, 6, 0, 0, 64, 0, 1, 0], [79, 83, 114, 95], 0, 0),
+        P("WAVE ROBOT", [0, 0, 0, 0, 53, 74, 14, 0], [15, 83, 127, 73], 0, 0),
+        P("LASER SWP", [0, 1, 0, 0, 32, 106, 4, 89], [15, 83, 102, 79], 0, 0),
+        P("WOBBLE BS", [1, 6, 0, 0, 32, 53, 2, 0], [15, 83, 114, 64], 1, 0),
+        P("REESE SUB", [0, 4, 0, 0, 44, 21, 2, 0], [15, 83, 102, 66], 1, 0),
+        P("ACID SUB", [1, 0, 0, 0, 26, 95, 4, 0], [10, 79, 76, 60], 1, 0),
+        P("LADDER BS", [0, 3, 0, 0, 30, 48, 4, 0], [10, 88, 102, 64], 1, 0),
+        P("S/H LEAD", [0, 0, 0, 0, 53, 42, 2, 0], [15, 83, 102, 79], 1, 0),
+        P("CHORUS SQR", [1, 3, 0, 0, 64, 37, 2, 0], [15, 83, 102, 79], 1, 0),
+        P("SAW LEAD", [0, 3, 0, 0, 74, 21, 2, 0], [15, 83, 102, 79], 1, 0),
+        P("WHISTLE", [4, 6, 0, 0, 127, 0, 2, 0], [51, 83, 102, 73], 1, 0),
+        P("CLEAN KEYS", [3, 3, 64, 0, 74, 0, 2, 0], [10, 98, 38, 79], 0, 0),
+        P("TINE PIANO", [3, 3, 64, 0, 53, 0, 2, 0], [10, 108, 19, 86], 0, 0),
+        P("CLAVI", [2, 1, 17, 0, 21, 0, 8, 0], [0, 84, 19, 54], 0, 0),
+        P("LOFI PIANO", [0, 2, 0, 70, 64, 0, 2, 0], [10, 105, 13, 83], 0, 0),
+        P("CHORUS PAD", [2, 4, 37, 0, 53, 32, 2, 0], [86, 83, 108, 98], 0, 0),
+        P("BRASS PAD", [0, 3, 0, 0, 32, 16, 2, 0], [88, 83, 114, 101], 0, 0),
+        P("MORPH PAD", [0, 6, 0, 0, 42, 32, 2, 0], [95, 83, 114, 108], 0, 0),
+        P("GLASS PAD", [3, 6, 64, 0, 64, 64, 2, 0], [92, 95, 102, 101], 0, 0),
+        P("SWEEP PAD", [0, 6, 0, 0, 32, 42, 2, 0], [98, 83, 114, 108], 0, 0),
+        P("ANALOG PAD", [0, 5, 0, 0, 48, 16, 2, 0], [94, 83, 114, 105], 0, 0),
+        P("STRING MCH", [0, 6, 0, 0, 79, 11, 1, 0], [81, 95, 114, 94], 0, 0),
+        P("ENSEMBLE", [0, 6, 0, 0, 69, 0, 1, 0], [83, 83, 114, 95], 0, 0),
+        P("TREMOLO ST", [0, 6, 0, 0, 32, 32, 3, 0], [79, 83, 114, 95], 0, 0),
+        P("SOLINA", [0, 5, 0, 0, 58, 16, 2, 0], [76, 83, 114, 90], 0, 0),
+        P("PIZZICATO", [0, 5, 0, 0, 42, 0, 2, 0], [10, 81, 0, 73], 0, 0),
+        P("SLOW STR", [0, 6, 0, 0, 74, 0, 1, 0], [98, 83, 114, 105], 0, 0),
+        P("FR HORN", [3, 6, 64, 0, 37, 0, 2, 0], [60, 83, 114, 79], 0, 0),
+        P("NOISE BRS", [5, 5, 0, 0, 32, 32, 2, 0], [54, 83, 114, 79], 0, 0),
+        P("BRASS STAB", [0, 3, 0, 0, 32, 26, 2, 0], [22, 79, 25, 73], 0, 0),
+        P("STEEL PLCK", [0, 3, 0, 0, 42, 21, 2, 0], [0, 101, 99, 83], 0, 0),
+        P("HARP", [3, 6, 64, 0, 48, 0, 2, 0], [10, 105, 0, 95], 0, 0),
+        P("SYN PLUCK", [0, 3, 0, 0, 26, 32, 2, 0], [0, 86, 0, 79], 0, 0),
+        P("UFO", [4, 6, 0, 0, 127, 0, 2, 0], [73, 83, 127, 101], 1, 0),
+        P("ATOM SCAN", [0, 3, 0, 0, 95, 0, 2, 127], [15, 83, 114, 86], 0, 0),
+        P("WIND", [5, 5, 0, 0, 42, 53, 2, 0], [101, 83, 127, 110], 0, 0),
+        P("ALARM", [1, 0, 0, 0, 95, 0, 2, 0], [15, 83, 127, 64], 1, 0),
+        P("NOISE SNR", [5, 2, 0, 0, 26, 0, 8, 0], [0, 73, 0, 64], 0, 0),
+        P("CLOSED HAT", [5, 0, 0, 0, 48, 21, 8, 0], [0, 56, 0, 51], 0, 0),
+        P("OPEN HAT", [5, 0, 0, 0, 48, 21, 8, 0], [0, 86, 0, 79], 0, 0),
+        P("SYNTH TOM", [3, 6, 64, 0, 42, 0, 2, 0], [0, 84, 0, 73], 0, 0),
+        P("INIT", [0, 2, 0, 0, 74, 0, 2, 0], [15, 83, 102, 79], 0, 0),
+        P("WINDOW LD", [0, 1, 86, 0, 32, 42, 3, 127], [15, 83, 102, 79], 1, 0),
+        P("CLARINET", [1, 2, 13, 0, 42, 0, 3, 0], [54, 83, 114, 69], 1, 0),
+        P("PH WOBBLE", [1, 1, 53, 0, 37, 53, 3, 0], [15, 83, 114, 64], 1, 0),
+        P("PIPE PHASE", [1, 2, 13, 57, 42, 0, 3, 0], [60, 83, 127, 83], 0, 0),
+        P("DRIFT PAD", [0, 1, 98, 0, 48, 32, 2, 0], [101, 83, 114, 110], 0, 0),
+        P("DAWN PHASE", [2, 2, 50, 0, 37, 42, 2, 0], [105, 83, 114, 110], 0, 0),
+        P("NOISE PH", [5, 1, 19, 64, 53, 64, 14, 0], [101, 83, 127, 110], 0, 0),
+        P("PH GLASS", [3, 1, 30, 0, 23, 32, 8, 0], [95, 83, 114, 108], 0, 0),
+        P("DARK PHASE", [1, 2, 59, 0, 32, 21, 3, 0], [98, 83, 114, 108], 0, 0),
+        P("PH ENSMBLE", [0, 1, 82, 0, 44, 0, 3, 0], [83, 83, 114, 95], 0, 0),
+        P("PH TREMOLO", [0, 1, 51, 0, 42, 0, 3, 0], [79, 83, 114, 95], 0, 0),
+        P("SHIFT HORN", [0, 1, 37, 0, 32, 0, 3, 0], [60, 83, 114, 83], 0, 0),
+        P("PHASE STAB", [0, 0, 28, 0, 42, 42, 3, 0], [15, 81, 0, 69], 0, 0),
+        P("PH SCANNER", [0, 0, 56, 0, 58, 64, 14, 0], [15, 83, 127, 95], 0, 0),
+        P("PH GLITCH", [1, 0, 23, 64, 53, 53, 2, 0], [15, 83, 127, 73], 0, 0)] },
+    /*WAVELET-END*/
   ];
   const FM6_E = ENG.findIndex((e) => e.name === "FM6"), FM6_OWN = FM6.FACTORY_PK.length, DRUM_E = ENG.findIndex((e) => e.name === "DRUM");
   /* factory PATTERNS[] (engines.c; the device loads them from SAVE > PHRASES, presets only suggest one): absolute
@@ -1793,6 +1867,10 @@ function makeMockDevice(opt = {}) {
     [[60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75], [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]],
     [[36, 42, 42, 42, 38, 42, 36, 42, 36, 42, 42, 36, 38, 42, 46, 42], [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]],   /* 12 BEAT (DRUM) */
     [[48, 51, 55, 60, 63, 67, 72, 75, 48, 51, 55, 60, 63, 67, 72, 75], [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]],   /* 13 ARP */
+    /* OKTOWAVE: a C minor groove (engines.c PATTERNS 14 .. 16) */
+    [[36, 0, 36, 0, 0, 39, 0, 36, 0, 36, 0, 43, 0, 41, 0, 38], [1, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0]],   /* 14 OKTOBASS */
+    [[72, 0, 75, 0, 79, 0, 77, 75, 0, 74, 0, 72, 0, 70, 0, 67], [1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0]],   /* 15 OKTOLEAD */
+    [[60, 0, 0, 0, 0, 0, 0, 0, 56, 0, 0, 0, 58, 0, 0, 0], [0, T_, T_, T_, T_, T_, T_, T_, 0, T_, T_, T_, 0, T_, T_, T_]],   /* 16 OKTOCHRD */
   ];
   for (let op = 0; op < 4; op++) TP.push(D("ATK", F.TIME, 0, 127, 0), D("DEC", F.TIME, 0, 127, 0), D("SUS", F.PCT, 0, 127, 127), D("REL", F.TIME, 0, 127, 0), D("LVL", F.PCT, 0, 127, 127));
   TP.push(E("CHRD", ["OFF", "DIA3", "DIA7", "MAJ", "MIN", "DOM7", "MAJ7", "MIN7", "SUS4", "POW"], 0),   /* the chord keys 81, 82 */
@@ -2425,7 +2503,7 @@ function enumShown(d) {
 /* the order the device shows its engines in (src/engines.c ENGINE_ORDER): the lists here follow it, the protocol keeps
    the engine numbers. engineOrder(names): the indices of names in that order, "-" (a reserved number) left out; a name
    the list does not know (another firmware) follows in index order */
-const ENGINE_ORDER = ["ANALOG", "FM6", "DIGITAL", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL", "GRAIN", "PHYS", "NOISE",
+const ENGINE_ORDER = ["WAVELET", "ANALOG", "FM6", "DIGITAL", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL", "GRAIN", "PHYS", "NOISE",
   "SLICE", "DRUM"];
 function engineOrder(names) {
   const rank = (n) => { const k = ENGINE_ORDER.indexOf(n); return k < 0 ? ENGINE_ORDER.length : k; };

@@ -42,7 +42,7 @@ Hügelton Instruments' own work and live in their own repository, Felucca-Engine
 `LICENSES/MIT-Felucca-Engines.txt`). The firmware built with them is GPL-3.0-only as a whole.
 Felucca's complete source includes that submodule: clone with `--recurse-submodules`, and
 give it along with the rest when you share the source. Each release also offers
-`felucca-X.Y.Z-source.tar.gz`, the whole source with the submodule's files in it (GitHub's
+`felucca-X.Y.Z-source.tar.gz` (Felucca's; OKTOWAVE's releases give the source as the repository at the release tag, cloned with `--recurse-submodules`: it has no such archive), the whole source with the submodule's files in it (GitHub's
 own source archives leave the submodule empty).
 
 You may use, study, change and share Felucca under the GPL. If you distribute Felucca, or

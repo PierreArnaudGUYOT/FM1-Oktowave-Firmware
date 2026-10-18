@@ -35,6 +35,11 @@ static const char *const PRESET_CAT[16] = {
     "FFFF",                      /* 11 NOISE: WIND, RAIN, ARCADE, METAL */
     "KUBLPUKU",                  /* 12 FM6: TINE EP, BELL, FM BASS, BRASS, PAD, MARIMBA, ORGAN, PLUCK */
     "DD",                        /* 13 SLICE: CHOP, STUTTER */
+#ifdef WAVELET_PRESET_CAT
+    WAVELET_PRESET_CAT,          /* 14 WAVELET (OKTOWAVE): one letter per preset, generated with the presets */
+#else
+    "",
+#endif
 };
 static uint32_t preset_cat(uint32_t e, uint32_t k)    /* factory preset k of engine e */
 {
