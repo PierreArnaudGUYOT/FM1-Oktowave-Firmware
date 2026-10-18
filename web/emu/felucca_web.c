@@ -398,6 +398,8 @@ EXPORT void web_enc(uint32_t role, int32_t n)
     if (role < NE)
         web_enc_steps[panel.enc[role] % 7u] += n * panel.dir[role];
 }
+/* OKTOWAVE: select track i (the demo of the page: the lead), as KNOB 1 on TRACKS does */
+EXPORT void web_select(uint32_t i) { track_select(i); }
 EXPORT void web_master(uint32_t v) { web_master_adc = v > 1023u ? 1023u : v; }
 /* a channel message from Web MIDI, as a USB-MIDI packet arrives (usb.c midi_enqueue): 0 = the ring was full */
 EXPORT uint32_t web_midi(uint32_t status, uint32_t d1, uint32_t d2)

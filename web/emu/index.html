@@ -568,14 +568,15 @@ function pressPlay() {
 function startDemo() {
   const bar = document.getElementById("demobar"), text = document.getElementById("demotext");
   setTimeout(() => {
-    send({ type: "enc", role: EN.SELECT, n: 2 });                 // track 3, the lead
+    send({ type: "select", n: 2 });                               // track 3, the lead
     setTimeout(pressPlay, 300);
   }, 600);
   demoCount = 0;
   bar.hidden = false;
-  text.textContent = "Demo: bass, chords, lead and drums play in C minor; the lead changes sound every 14 s (TOP Sounds first).";
+  text.textContent = "Demo: bass, chords, lead and drums play in C minor; the lead changes sound every 14 s through the TOP Sounds.";
   demoTimer = setInterval(() => {
-    send({ type: "enc", role: EN.PRESETS, n: 1 });
+    // PULSE LEAD is the 9th sound, the TOP Sounds end at the 15th: six steps up, then back to the lead
+    send({ type: "enc", role: EN.PRESETS, n: demoCount % 7 === 6 ? -6 : 1 });
     demoCount++;
   }, DEMO_STEP_MS);
 }
