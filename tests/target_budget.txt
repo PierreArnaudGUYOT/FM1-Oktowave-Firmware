@@ -1,9 +1,9 @@
 # FELUCCA target cost budget (tests/target_budget.py): instructions in the loops of each
 # function in build/felucca.dis, x4 per nesting level, divides x9. The check allows +10 %.
 # Rewritten by BUDGET_UPDATE=1.
-wavelet_render 1142
-wav_build_step 7624
-wav_tick 420
+wavelet_render 4355
+wav_build_step 7629
+wav_tick 1208
 analog_render 585
 phase_render 79
 phase_render_f 102

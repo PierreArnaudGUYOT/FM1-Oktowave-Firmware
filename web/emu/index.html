@@ -12,7 +12,7 @@
 <style>
 /* DotGothic16 (SIL OFL 1.1, fonts/OFL.txt), cut to printable ASCII, for the knob labels */
 @font-face { font-family: "DotGothic16"; src: url("fonts/DotGothic16-subset.woff") format("woff"); font-display: swap; }
-:root { --bg: #8e8e93; --fg: #111; --dim: #2c2c2e; --rule: #5a5a5e;
+:root { --bg: #8e8e93; --fg: #111; --dim: #1c1c1e; --rule: #5a5a5e;
         --body: #1d1d1f; --tray: #141415; --part: #2a2a2d; --edge: #3a3a3e; --label: #d6d6d8;
         --lit: #fff4d6; --green: #5fe08a; color-scheme: light; }
 html, body { background: var(--bg); }
@@ -93,7 +93,7 @@ footer nav a { margin: 0 6px; }
 footer small { font-size: 11px; opacity: .8; }
 </style>
 </head>
-<body>
+<body data-edition="oktogroove">
 <main>
 <div class="device" id="device">
   <svg id="panel" viewBox="0 0 1000 624" aria-hidden="true"></svg>
@@ -574,6 +574,15 @@ async function switchOn(demo) {
 // Sounds come first in the list), the other tracks keep the groove.
 let demoTimer = 0, demoCount = 0;
 const DEMO_STEP_MS = 14000;
+// the lead's tour, in steps of the PRESETS knob (a turn of it is ONE step whatever its size: the firmware reads the sign): the TOP Sounds of
+// OKTOWAVE and OKTOGROOVE (the lead is the 9th sound, the TOP Sounds end at the 15th: six up, six back), the FM6 sounds of OKTODUO (bell,
+// brass, marimba, organ, pluck, skipping the bass and the pad; then back to the electric piano)
+const DEMO_TOURS = { oktowave: [1, 1, 1, 1, 1, 1, -6], oktogroove: [1, 1, 1, 1, 1, 1, -6], oktoduo: [1, 2, 2, 1, 1, -7] };
+const DEMO_TOUR = DEMO_TOURS[document.body.dataset.edition] || DEMO_TOURS.oktowave;
+function turnSteps(k, delta) {                                   // |delta| single steps, 90 ms apart (the knob on the panel turns with each)
+  const dir = Math.sign(delta);
+  for (let i = 0; i < Math.abs(delta); i++) setTimeout(() => turn(k, dir), i * 90);
+}
 function pressPlay() {
   send({ type: "buttons", mask: (1 << B.PLAY) | latched });
   setTimeout(() => send({ type: "buttons", mask: latched }), 250);
@@ -590,10 +599,9 @@ function startDemo() {
     document.addEventListener("keydown", takeOver, true);
   }, 2000);
   bar.hidden = false;
-  text.textContent = "Demo: bass, chords, lead and drums play in C minor; the lead changes sound every 14 s through the TOP Sounds.";
+  text.textContent = "Demo: bass, chords, lead and drums play in C minor; the lead changes sound every 14 s.";
   demoTimer = setInterval(() => {
-    // PULSE LEAD is the 9th sound, the TOP Sounds end at the 15th: six steps up, then back to the lead
-    turn(knobs.find((k) => k.role === EN.PRESETS), demoCount % 7 === 6 ? -6 : 1);   // (the knob on the panel turns, its mark too)
+    turnSteps(knobs.find((k) => k.role === EN.PRESETS), DEMO_TOUR[demoCount % DEMO_TOUR.length]);
     demoCount++;
   }, DEMO_STEP_MS);
 }

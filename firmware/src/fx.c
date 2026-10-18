@@ -871,7 +871,7 @@ static const uint16_t ENG_VCOST[NENGINES] = {163, FELUCCA_FM4 ? 181 : 0, 162, 67
 #else
                                              0,
 #endif
-                                             330};                       /* OKTOWAVE: WAVELET, about 2 x ANALOG's per voice */
+                                             400};                       /* OKTOWAVE: WAVELET, about 2 .. 2.5 x ANALOG's per voice (a window: up to 3.3) */
 #endif
 
 /* one synth part into the dry mix and the sends of sm (mx[0]; mx[1] on the second core); a part with no voice sounding costs

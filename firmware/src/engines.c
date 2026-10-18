@@ -222,6 +222,9 @@ static const struct {
 /* the parts at power-on (engine, preset, PATTERNS[n - 1] in the sequencer, 0 = empty: all are): bass, pad, lead, drums */
 static const uint8_t TRK_BOOT[NPART][3] = {{ENGI_WAVELET, WP_REESE_SUB, 14}, {ENGI_WAVELET, WP_WARM_PAD, 16},
                                            {ENGI_WAVELET, WP_PULSE_LEAD, 15}, {ENGI_DRUM, 0, 12}};
+/* OKTOWAVE: the pad and the lead of the power-on groove play MONO (legato): one voice each, so that the shared budget never takes a released
+ * voice with a long tail from the pad for a note of the lead (bit i: track i + 1) */
+#define BOOT_MONO 0x6u
 #ifdef OKTOWAVE_GROOVEBOX
 #define TRK_DEF TRK_BOOT           /* OKTOWAVE GROOVEBOX: what a project of an older format falls back to is this firmware's own tracks */
 #else

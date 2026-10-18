@@ -12,7 +12,7 @@ static int wav_want(const track_t *t, int16_t *w)        /* E0 .. E3 of a part, 
         if (i == 0u) v = (int16_t)clamp(v, 0, 11);
         else if (i == 1u) v = (int16_t)clamp(v, 0, WAV_NW - 1);
         else v = (int16_t)clamp(v, 0, 127);
-        if (i >= 2u && WAV_IS_B(t->p[P_E0]))
+        if (i >= 2u && WAV_IS_B(w[0]))
             v = 0;                                      /* engine B: BARS and TILT are gains, not part of the table */
         if (w[i] != v) {
             w[i] = v;
@@ -49,6 +49,8 @@ static __attribute__((noinline)) void wav_tick(void)   /* (not inlined: its loop
             wav_xf[p] = 0;
             continue;
         }
+        if (t->xf_on || t->eng_req != t->engine)        /* changing engine: t->p holds the new engine's values for a few blocks */
+            continue;
         ps = WAV_PART(t);
         if (s->owner == p + 1u) {
             if (s->stage == WS_XF) {
@@ -67,7 +69,14 @@ static __attribute__((noinline)) void wav_tick(void)   /* (not inlined: its loop
                     s->snap[i] = want[i];
                 s->stage = WS_SRC;
             }
-            wav_build_step(s, WAV_QUANTUM);
+            {   /* the slice shrinks as the audio interrupt's load rises (song.cpu_q8: 256 = 100 %): a build takes longer, never the interrupt over its half */
+                int32_t q = WAV_QUANTUM;
+                if (song.cpu_q8 > 160u)
+                    q >>= 1;
+                if (song.cpu_q8 > 200u)
+                    q >>= 1;
+                wav_build_step(s, q);
+            }
             if (s->stage == WS_DONE) {
                 if (!wav_valid[p]) {                       /* nothing to fade from */
                     wav_copy_table(p, ps, s);
