@@ -98,6 +98,13 @@ jobs:
           else
             sh tests/run_tests.sh 2>&1 | tee build/tests.log
           fi
+      - name: "UI render reports (the layout lint's findings)"
+        if: always()
+        run: |
+          for r in build/ui_new/report.txt build/ui_fm4/report.txt; do
+            echo "=== $r"; [ -f "$r" ] && head -150 "$r" | cut -c1-200
+          done
+          true
       - name: "WAVELET engine: the standalone host test and the floating-point reference"
         if: always()
         run: |
