@@ -169,7 +169,7 @@ jobs:
         with:
           name: firmware
           path: firmware
-      - name: GitHub release (a pre-release while the version is 0.x: not yet run on an FM-1)
+      - name: "GitHub release (a pre-release while the version is 0.x, not yet run on an FM-1)"
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
