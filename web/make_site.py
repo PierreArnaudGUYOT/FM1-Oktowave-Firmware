@@ -50,9 +50,9 @@ def main(pkg, version, out):
     lib = strip_module((HERE / "fm1pkg.js").read_text(encoding="utf-8")) + "\n" + \
         strip_module((HERE / "fm1ota.js").read_text(encoding="utf-8")) + "\n" + \
         strip_module((HERE / "fm1backup.js").read_text(encoding="utf-8"))
-    ed = os.environ.get("EDITION", "OKTOWAVE")             # the edition's name (OKTOWAVE, OKTOGROOVE, OKTODUO): the workflow reads it from felucca.c
-    name = f"{ed.lower()}-{re.sub(r'[^A-Za-z0-9.-]', '-', version)}.fwsc"
-    meta = json.dumps({"version": version, "product": product, "pkg": "../../firmware/" + name, "edition": ed})
+    edition = os.environ.get("EDITION", "OKTOWAVE")             # the edition's name (OKTOWAVE, OKTOGROOVE, OKTODUO): the workflow reads it from felucca.c
+    name = f"{edition.lower()}-{re.sub(r'[^A-Za-z0-9.-]', '-', version)}.fwsc"
+    meta = json.dumps({"version": version, "product": product, "pkg": "../../firmware/" + name, "edition": edition})
     for mark in ("/*LIB*/", "/*META*/"):
         if html.count(mark) != 1:
             raise SystemExit(f"index_pkg.html must contain {mark} once; update make_site.py")
@@ -81,9 +81,9 @@ def main(pkg, version, out):
         if (HERE / f).exists():
             shutil.copy(HERE / f, ed / f)
     (out / "index.html").write_text(
-        '<!doctype html><meta charset="utf-8"><title>' + ed + ' for the FM-1</title>'
+        '<!doctype html><meta charset="utf-8"><title>' + edition + ' for the FM-1</title>'
         '<meta http-equiv="refresh" content="0; url=webapp/installer/">'
-        '<a href="webapp/installer/">' + ed + ' installer</a> · <a href="webapp/try/">try it in the browser</a> · '
+        '<a href="webapp/installer/">' + edition + ' installer</a> · <a href="webapp/try/">try it in the browser</a> · '
         '<a href="manual/">manual</a>\n', encoding="utf-8")
     print(f"site: {out}: webapp/installer ({len(html)} B), webapp/editor, firmware/{name} ({len(raw)} B, {product})")
 
