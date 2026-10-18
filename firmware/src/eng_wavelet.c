@@ -274,7 +274,7 @@ static void wav_pattern(wav_scratch_t *s)
 static void wav_layer_out(wav_scratch_t *s, const int32_t *lay)
 {
     uint32_t i;
-    int64_t recip = 0;
+    uint32_t f = 0, sh = 0;                             /* engine B: v = lay x 2^14 / peak, as (lay x f >> 16) >> sh */
     if (WAV_IS_B(s->snap[0])) {
         int32_t peak = 0;
         for (i = 0; i < WAV_N; i++) {
@@ -283,10 +283,17 @@ static void wav_layer_out(wav_scratch_t *s, const int32_t *lay)
                 peak = a;
         }
         if (peak > 0)
-            recip = (((int64_t)16384 << 32) / (int64_t)peak);   /* (signed: the FM-1's runtime has __divdi3, not __udivdi3) */
+        {   /* (no 64-bit division on the FM-1: the divisor is cut to 16 bits, f = 2^30 / divisor, a 32-bit division) */
+            uint32_t pk = peak > 0 ? (uint32_t)peak : 1u;
+            while ((pk >> sh) >= 65536u)
+                sh++;
+            f = (1u << 30) / (pk >> sh);
+        }
     }
     for (i = 0; i < WAV_N; i++) {
-        int32_t v = recip ? (int32_t)(((int64_t)lay[i] * recip + ((int64_t)1 << 31)) >> 32) : wav_sat16((lay[i] + 32) >> 6);
+        int32_t v = f ? (int32_t)(((int64_t)lay[i] * (int32_t)f + 32768) >> 16) : wav_sat16((lay[i] + 32) >> 6);
+        if (f)
+            v = (v + (int32_t)((1u << sh) >> 1)) >> sh;
         v = wav_sat16(v);
         int16_t *row = s->t + i * WAV_NL;
         row[s->band] = (int16_t)v;
@@ -514,13 +521,13 @@ static int32_t wav_db_to_q10w(int32_t dbq8)
 static void wav_bscale(const int16_t *p, wav_part_t *ps, uint32_t vi, int32_t *g)
 {
     const uint16_t *reg = WAV_REG[(uint32_t)clamp(p[P_E2], 0, 127) >> 3];
-    int32_t tilt_q8 = (int32_t)(-(int64_t)clamp(p[P_E3], 0, 127) * 24 * 256 / 127);   /* dB per band, Q8 */
+    int32_t tilt_q8 = -(clamp(p[P_E3], 0, 127) * 6144 / 127);   /* dB per band, Q8: 0 .. -24 dB (6144 = 24 x 256) */
     int32_t fade = clamp(p[P_E7], 0, 127), idx7 = 127 - fade;
-    int64_t bar[WAV_NB], sum = 0, norm;
+    int32_t bar[WAV_NB], sum = 0, norm;
     uint16_t *lv = ps->lv[vi];
     uint32_t j;
     for (j = 0; j < WAV_NB; j++) {
-        bar[j] = ((int64_t)reg[j] * wav_db_to_q10w(tilt_q8 * (int32_t)j)) >> 10;
+        bar[j] = ((int32_t)reg[j] * wav_db_to_q10w(tilt_q8 * (int32_t)j)) >> 10;   /* Q10, at most 1024 */
         sum += bar[j];
     }
     norm = sum > 1024 ? sum : 1024;
@@ -537,12 +544,12 @@ static void wav_bscale(const int16_t *p, wav_part_t *ps, uint32_t vi, int32_t *g
         for (j = 0; j < WAV_NB; j++) {
             int32_t idx = idx7 + ((127 - idx7) * (int32_t)(WAV_NB - 1u - j)) / (int32_t)(WAV_NB - 1u);
             int32_t l = (int32_t)lv[j];
-            l += (int32_t)(((int64_t)(16384 - l) * ENV_EXP[clamp(idx, 0, 127)]) >> 16);
+            l += ((16384 - l) * (int32_t)ENV_EXP[clamp(idx, 0, 127)]) >> 16;   /* (|16384 - l| x 65535 < 2^31) */
             lv[j] = (uint16_t)clamp(l, 0, 32767);
         }
     }
     for (j = 0; j < WAV_NB; j++)
-        g[j] = (int32_t)(((int64_t)g[j] * bar[j] / norm * (int64_t)lv[j]) >> 15);
+        g[j] = ((g[j] * bar[j] / norm) * (int32_t)lv[j]) >> 15;   /* (g <= 16384, bar <= 1024: 2^24; then x lv <= 2^15) */
 }
 
 /* ------------------------------------------------------------- voices --- */
