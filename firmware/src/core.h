@@ -31,6 +31,9 @@
 #define NENGINES 15                     /* SLICE 13 (without FELUCCA_SLICE a reserved slot), WAVELET 14 (OKTOWAVE) */
 #define ENGI_WAVELET 14u                 /* the WAVELET engine (eng_wavelet.c): the firmware's own */
 #define ENGI_DIGITAL 1u          /* reserved without FELUCCA_FM4: never selectable (eng_ok), its sounds load as FM6 */
+#if defined(OKTOWAVE_GROOVEBOX) && defined(OKTOWAVE_DUO)
+#error "OKTOWAVE_GROOVEBOX and OKTOWAVE_DUO are two editions: define one"
+#endif
 #ifdef OKTOWAVE_GROOVEBOX
 #define NENG_SHOWN 2             /* OKTOWAVE GROOVEBOX: WAVELET and DRUM are the engines one can pick (engines.c ENGINE_ORDER); the others stay in the
                                   * firmware for the projects and user presets that name them, and play */

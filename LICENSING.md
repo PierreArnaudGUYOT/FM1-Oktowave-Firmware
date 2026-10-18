@@ -12,11 +12,14 @@ Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
 OKTOWAVE is Felucca with one more engine. Its own files are GPL-3.0-only too, Copyright (C) 2026
 Pierre Arnaud GUYOT (OktoPierre): `firmware/src/eng_wavelet.c`, `firmware/src/wavelet_tick.c`,
 `firmware/src/wavelet_presets.h` and `firmware/src/wavelet_tables.h` (generated), `tools/gen_wavelet_tables.py`,
-`tools/gen_wavelet_presets.js`, `tools/wavelet_ref.js`, `tools/wavelet_presets_src.json`, `tests/wavelet_test.c`,
-`docs/manual.html` and `.github/workflows/build.yml`. The engine is a port of engine A of the Wavelet Synthesizer
+`tools/gen_wavelet_presets.js`, `tools/export_wavelet_presets.js`, `tools/wavelet_ref.js`, `tools/wavelet_presets_src.json`,
+`tests/wavelet_test.c`, `tests/budget_test.c`, `tests/groovebox_test.c` and `tests/duo_test.c` (on the edition branches),
+`docs/manual.html` and `.github/workflows/build.yml`. The engine is a port of engines A and B of the Wavelet Synthesizer
 (<https://github.com/PierreArnaudGUYOT/Free-Wavelet-Synthesizer-VST>, GPL-3.0-or-later, the same author), whose
 presets `tools/wavelet_presets_src.json` carries. `tools/wavelets.json` holds wavelet filter coefficients computed
-with PyWavelets (MIT, <https://github.com/PyWavelets/pywt>): numbers, not code.
+with PyWavelets (MIT, <https://github.com/PyWavelets/pywt>): numbers, not code. `tests/wavelet_test.c` includes Felucca-Engines' MIT
+`dsp.c` when it is compiled and copies nothing of it. The editions OKTOGROOVE and OKTODUO are the same sources with one define each
+(`OKTOWAVE_GROOVEBOX`, `OKTOWAVE_DUO` in `firmware/src/felucca.c`) and their own tests, pages and manual sections.
 
 ## What is GPL-3.0-only
 
