@@ -31,6 +31,7 @@ static struct { volatile uint32_t notes, buttons; } fm1_in;
 #include "../firmware/src/voice.c"
 #include "../firmware/src/slicer.c"
 #include "../firmware/src/fx.c"
+static void events_block(uint32_t n) { (void)n; }       /* seq.c's (fx.c's mix_block calls it; this test mixes nothing, but gcc at -O0 keeps mix_block) */
 
 static int bad;
 static void check(const char *what, int ok)
