@@ -39,7 +39,7 @@ jobs:
     timeout-minutes: 90
     permissions:
       contents: read
-      actions: read      # main's site includes the groovebox branch's (its latest successful run's artifact)
+      actions: read      # main's site includes the other editions' (their branches' latest successful run's artifact)
     steps:
       - uses: actions/checkout@v4
         with:
@@ -115,9 +115,9 @@ jobs:
         if: always()
         run: |
           mkdir -p build/host
-          python3 firmware/engines/tools/gen_engine_tables.py build/host/fe_tables.h
+          python3 tools/gen_tables.py build/host/felucca_tables.h
           cc -O2 -std=gnu99 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-dangling-else -I build/host \
-             -o build/host/wavelet_test tests/wavelet_test.c
+             -o build/host/wavelet_test tests/wavelet_test.c -lm
           build/host/wavelet_test build/host | tee build/wavelet_test.log
           node tools/wavelet_ref.js build/host | tee -a build/wavelet_test.log
       - name: "OKTOGROOVE: the groovebox edition's engine list test (only where tests/groovebox_test.c exists)"
@@ -141,23 +141,30 @@ jobs:
           cp docs/manual.html build/site/manual/index.html
           cp docs/controls.jpg build/site/manual/
           ls -R build/site | head -40
-      - name: "Keep this branch's site (the main site shows the groovebox branch's under /groovebox/)"
+      - name: "Keep this branch's site (the main site shows the other editions' under /groovebox/ and /duo/)"
         uses: actions/upload-artifact@v4
         with:
           name: site-${{ github.ref_name }}
           path: build/site
           retention-days: 90
-      - name: "Add the groovebox edition's site (main only: the latest successful run of the groovebox branch)"
+      - name: "Add the other editions' sites (main only: the latest successful run of each edition's branch)"
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          ID=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow build.yml --branch wavelet-groovebox --status success --limit 1 --json databaseId --jq '.[0].databaseId' || true)
-          if [ -n "$ID" ] && gh run download "$ID" --repo "$GITHUB_REPOSITORY" -n site-wavelet-groovebox -D build/site/groovebox; then
-            sed -i 's#<a href="manual/">manual</a>#<a href="manual/">manual</a> · <a href="groovebox/">groovebox edition</a>#' build/site/index.html
-            echo "groovebox site from run $ID"; ls build/site/groovebox | head
-          else
-            echo "no groovebox site yet"
+          LINKS=""
+          for E in wavelet-groovebox:groovebox:OKTOGROOVE oktoduo:duo:OKTODUO; do
+            BR=${E%%:*}; REST=${E#*:}; DIR=${REST%%:*}; NAME=${REST#*:}
+            ID=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow build.yml --branch "$BR" --status success --limit 1 --json databaseId --jq '.[0].databaseId' || true)
+            if [ -n "$ID" ] && gh run download "$ID" --repo "$GITHUB_REPOSITORY" -n "site-$BR" -D "build/site/$DIR"; then
+              LINKS="$LINKS · <a href=\"$DIR/\">$NAME edition</a>"
+              echo "$NAME site from run $ID"
+            else
+              echo "no $NAME site yet"
+            fi
+          done
+          if [ -n "$LINKS" ]; then
+            sed -i "s#<a href=\"manual/\">manual</a>#<a href=\"manual/\">manual</a>$LINKS#" build/site/index.html
           fi
       - name: Baselines (to commit by hand after an update run)
         if: always()
@@ -223,12 +230,12 @@ jobs:
             "$DIR"/*.fwsc "$DIR"/*.bin "$DIR"/SHA256SUMS "$DIR"/LICENSE "$DIR"/LICENSING.md
   refresh-main:
     needs: build
-    if: github.ref == 'refs/heads/wavelet-groovebox'
+    if: github.ref == 'refs/heads/wavelet-groovebox' || github.ref == 'refs/heads/oktoduo'
     runs-on: ubuntu-24.04
     permissions:
       actions: write
     steps:
-      - name: "Rebuild main so that its site shows this branch (/groovebox/)"
+      - name: "Rebuild main so that its site shows this edition (/groovebox/, /duo/)"
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run build.yml --repo "$GITHUB_REPOSITORY" --ref main

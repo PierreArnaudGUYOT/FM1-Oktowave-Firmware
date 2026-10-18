@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Pierre Arnaud GUYOT (OktoPierre)
-// Exports the presets this firmware can play from the Wavelet Synthesizer's tools/spec.js (beta 0.7: the factory order,
-// OktoPierre's 22 TOP Sounds first) to tools/wavelet_presets_src.json: every engine-A preset ("A · ") and the A/B presets
-// that are mostly A (ab_mix <= 0.5, played as their A part); engine-B presets are left out (no engine B on the FM-1).
+// Exports the Wavelet Synthesizer's presets (tools/spec.js, beta 0.7: the factory order, OktoPierre's 22 TOP Sounds first) to
+// tools/wavelet_presets_src.json. The FM-1 engine has both of the VST's engines (WAVE 0 .. 5 = engine A, 6 .. 11 = engine B): an
+// A/B preset is played as its A part when ab_mix <= 0.5, else as its B part (tools/gen_wavelet_presets.js chooses which to keep).
 // Each entry carries `top` = its place among the TOP Sounds (0 .. 21), absent for the others.
 //   node tools/export_wavelet_presets.js "C:/path/to/wavelet synthesizer"
 'use strict';
@@ -12,7 +12,7 @@ const path = require('path');
 const repo = process.argv[2];
 if (!repo) { console.error('usage: node tools/export_wavelet_presets.js PATH_TO_WAVELET_SYNTHESIZER_REPO'); process.exit(2); }
 const S = require(path.join(repo, 'tools', 'spec.js'));
-const keep = p => /^A · /.test(p.name) || (/^AB · /.test(p.name) && (p.v.ab_mix === undefined ? 0 : p.v.ab_mix) <= 0.5);
+const keep = p => /^(A|B|AB) · /.test(p.name);   // every preset: A, B, or A/B (played as its A part when ab_mix <= 0.5, else as its B part)
 const out = {
   source: `Wavelet Synthesizer ${S.APP.version} tools/spec.js (engine-A presets), GPL-3.0-or-later, Pierre Arnaud GUYOT`,
   defaults: Object.fromEntries(S.PARAMS.map(p => [p.key, p.def])),

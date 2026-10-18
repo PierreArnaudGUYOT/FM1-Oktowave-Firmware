@@ -4,7 +4,8 @@
  * MIT, Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments (firmware/engines/LICENSE). */
 /* The WAVELET engine on a minimal host (after Felucca-Engines' tests/fe_host.c): no Felucca sources but
  * dsp.c, eng_analog.c (a cost reference) and the engine itself, so it builds anywhere with a C compiler.
- *   cc -O2 -std=gnu99 -I build/host -o build/host/wavelet_test tests/wavelet_test.c
+ *   python3 tools/gen_tables.py build/host/felucca_tables.h
+ *   cc -O2 -std=gnu99 -I build/host -o build/host/wavelet_test tests/wavelet_test.c -lm
  *   build/host/wavelet_test [OUT_DIR]
  * 1. every WAVE x WVLT (x SPRS 0 / 64): the table builds through wav_tick in bounded slices; its DRY row
  *    peaks near 1.0 and is the sum of the layers; the cost (multiply-adds, blocks) is printed.
@@ -16,6 +17,7 @@
  * 4. a table change while a note plays: the cross-fade shows no step (the largest sample-to-sample jump
  *    across the switch stays below the sound's own).
  * 5. above Nyquist: at the highest pitch the bands that would alias are off. */
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,7 +26,7 @@
 
 #define NVOICE 8
 #define NPART 4
-#include "fe_tables.h"
+#include "felucca_tables.h"            /* python3 tools/gen_tables.py build/host/felucca_tables.h (the engine tables and the envelope ones) */
 #include "../firmware/engines/src/felucca_engine.h"
 
 enum { P_ATK, P_REL, P_FTYPE, P_E0, P_E1, P_E2, P_E3, P_E4, P_E5, P_E6, P_E7, P_COUNT };
@@ -270,9 +272,9 @@ int main(int argc, char **argv)
            (unsigned)(WAV_TSIZE * 2u), (unsigned)sizeof(wav_part_t), (unsigned)sizeof(wav_scratch_t), WAV_QUANTUM);
 
     /* 1. every wave x wavelet builds; 2. a few tables as text */
-    for (w = 0; w < 6u; w++)
+    for (w = 0; w < 12u; w++)                           /* 0 .. 5 engine A, 6 .. 11 engine B */
         for (wl = 0; wl < WAV_NW; wl++)
-            for (sp = 0; sp < 2u; sp++) {
+            for (sp = 0; sp < (w >= 6u ? 1u : 2u); sp++) {
                 track_t *t = &trk[0];
                 wav_part_t *ps;
                 uint32_t blocks, macs;
@@ -304,15 +306,34 @@ int main(int argc, char **argv)
                 }
                 snprintf(path, sizeof path, "build wave %u wavelet %u sprs %u", w, wl, sp);
                 check(path, blocks > 0);
-                snprintf(path, sizeof path, "DRY peak near 1.0 (wave %u wavelet %u sprs %u: %d)", w, wl, sp, peak);
-                check(path, sp ? peak >= 2000 && peak <= 32767 : peak >= 16000 && peak <= 16500);
-                snprintf(path, sizeof path, "DRY = sum of the layers (wave %u wavelet %u: %d)", w, wl, sumerr);
-                check(path, sumerr == 0);
+                if (w < 6u) {
+                    snprintf(path, sizeof path, "DRY peak near 1.0 (wave %u wavelet %u sprs %u: %d)", w, wl, sp, peak);
+                    check(path, sp ? peak >= 2000 && peak <= 32767 : peak >= 16000 && peak <= 16500);
+                    snprintf(path, sizeof path, "DRY = sum of the layers (wave %u wavelet %u: %d)", w, wl, sumerr);
+                    check(path, sumerr == 0);
+                } else {                                    /* engine B: every layer is scaled to a peak of 1.0 (16384) */
+                    int32_t lo = 99999, hi = 0;
+                    for (j = 0; j < WAV_NB; j++) {
+                        int32_t lp = 0;
+                        for (i = 0; i < WAV_N; i++) {
+                            int32_t a = ps->t[i * WAV_NL + j];
+                            a = a < 0 ? -a : a;
+                            if (a > lp)
+                                lp = a;
+                        }
+                        if (lp < lo)
+                            lo = lp;
+                        if (lp > hi)
+                            hi = lp;
+                    }
+                    snprintf(path, sizeof path, "B: every layer peaks at 1.0 (wave %u wavelet %u: %d .. %d)", w, wl, lo, hi);
+                    check(path, lo >= 16380 && hi <= 16388);
+                }
                 snprintf(path, sizeof path, "guard row (wave %u wavelet %u)", w, wl);
                 check(path, !memcmp(ps->t, ps->t + WAV_N * WAV_NL, WAV_NL * sizeof(int16_t)));
                 printf("table wave %u wvlt %-5s sprs %-3d: %4u blocks %7u macs, DRY peak %5d, layer peak %5d\n",
                        w, N_WVLT[wl], t->p[P_E3], blocks, macs, peak, maxlay);
-                if ((w == 0u || w == 2u || w == 5u) && (wl == 0u || wl == 2u || wl == 6u)) {
+                if ((w == 0u || w == 2u || w == 5u || w == 6u || w == 9u || w == 11u) && (wl == 0u || wl == 2u || wl == 6u)) {
                     FILE *f;
                     snprintf(path, sizeof path, "%s/table_w%u_l%u_s%d.txt", outdir, w, wl, t->p[P_E3]);
                     f = fopen(path, "w");
@@ -379,7 +400,8 @@ int main(int argc, char **argv)
     {
         uint32_t note, wv, bad_all = 0, tested = 0;
         static const uint8_t NOTES[] = {0, 12, 36, 48, 60, 72, 84, 96, 120, 127};
-        for (wv = 0; wv < 2u; wv++)
+        static const uint8_t WV_E0[4] = {0, 2, 7, 11}, WV_E1[4] = {2, 0, 2, 0};   /* SAW DB4, PLS HAAR, MIRR DB4, RAND HAAR */
+        for (wv = 0; wv < 4u; wv++)
             for (note = 0; note < sizeof NOTES; note++) {
                 track_t *t = &trk[0];
                 voice_t *v = &t->v[0];
@@ -387,15 +409,22 @@ int main(int argc, char **argv)
                 vmod_t m;
                 uint32_t blk, i, j, bad = 0, nb = 64;
                 part_reset(t, E_WAV);
-                t->p[P_E0] = (int16_t)(wv ? 2 : 0);          /* SAW, PLS: edges everywhere */
-                t->p[P_E1] = (int16_t)(wv ? 0 : 2);          /* HAAR, DB4 */
-                t->p[P_E2] = 17;
+                t->p[P_E0] = WV_E0[wv];                      /* SAW, PLS: edges everywhere; engine B: two patterns */
+                t->p[P_E1] = WV_E1[wv];
+                t->p[P_E2] = WAV_IS_B(WV_E0[wv]) ? 8 : 17;   /* (B: the registration 1) */
+                t->p[P_E3] = WAV_IS_B(WV_E0[wv]) ? 30 : 0;
                 t->p[P_E4] = 80;
                 t->p[P_E5] = 40;
                 t->p[P_E6] = 2;
                 build_table(t);
                 voice_on(t, &ENG_WAVELET, v, NOTES[note], 0);
                 v->stage = 2;
+                if (WAV_IS_B(WV_E0[wv])) {                   /* engine B: the scale envelope done swelling, so that the gains are steady */
+                    uint32_t q;
+                    WAV_PART(t)->atk[0] = 0;
+                    for (q = 0; q < WAV_NB; q++)
+                        WAV_PART(t)->lv[0][q] = 32767;
+                }
                 memset(&m, 0, sizeof m);
                 m.pitch16 = (int32_t)NOTES[note] * 16;
                 m.inc = pitch_inc((uint32_t)clamp(m.pitch16, 0, 2047));
@@ -409,6 +438,9 @@ int main(int argc, char **argv)
                     memset(out, 0, sizeof out);
                     ENG_WAVELET.render(t, v, out, CTL, &m);
                     wav_gains(t->p, cutq8, m.inc, g1, gate);
+                    if (WAV_IS_B(WV_E0[wv]))                 /* engine B: the gains the render used (steady: its end-of-block gains) */
+                        for (j = 0; j < WAV_NB; j++)
+                            g1[j] = ps->g0[0][j];
                     if (blk < 2u)
                         continue;                            /* (the gains are steady from the second block) */
                     for (i = 0; i < CTL; i++) {
@@ -432,11 +464,11 @@ int main(int argc, char **argv)
                 tested++;
                 if (bad) {
                     snprintf(path, sizeof path, "render = naive evaluation (wave %u, note %u: %u wrong samples, worst %d)",
-                             wv ? 2u : 0u, NOTES[note], bad, lastmax);
+                             (unsigned)WV_E0[wv], NOTES[note], bad, lastmax);
                     check(path, 0);
                 }
             }
-        printf("naive render check: %u notes x 2 waves, %u wrong samples\n", tested, bad_all);
+        printf("naive render check: %u notes x 4 waves, %u wrong samples\n", tested, bad_all);
     }
 
     /* 7. a table switch with the resonance up: the cross-fade's product of two Q15 numbers must not wrap */
@@ -526,6 +558,64 @@ int main(int argc, char **argv)
                 loud_after += o2[b] != 0;
         }
         check("a part with no table is silent, not stale", loud_before > 100 && loud_after == 0);
+    }
+
+    /* 9. engine B's scale: the band gains against the formula in double precision; the swell; the fade */
+    {
+        track_t *t = &trk[3];
+        wav_part_t *ps;
+        int32_t g[WAV_NB], fg[WAV_NB], worst = 0;
+        uint32_t j, blk;
+        double bar[WAV_NB], sum = 0, norm;
+        const int bars_i = 1, e3 = 64;                     /* the registration 1, TILT 64 (-12 dB per band) */
+        part_reset(t, E_WAV);
+        ps = WAV_PART(t);
+        t->p[P_E0] = 7;
+        t->p[P_E2] = (int16_t)(bars_i * 8);
+        t->p[P_E3] = e3;
+        t->p[P_E7] = 0;                                    /* no fade */
+        t->p[P_ATK] = 60;
+        wavelet_note_on(t, &t->v[0]);
+        for (j = 0; j < WAV_NB; j++)
+            fg[j] = g[j] = 1024 - (int32_t)j * 100;        /* a filter's gains (Q10) */
+        for (blk = 0; blk < 400u && ps->atk[0]; blk++) {   /* ATK 60 is a swell of about 50 ms: count the blocks */
+            for (j = 0; j < WAV_NB; j++)
+                g[j] = fg[j];
+            wav_bscale(t->p, ps, 0, g);
+        }
+        check("B: the scale envelope swells then stops swelling (ATK 60)", blk > 5u && blk < 400u && !ps->atk[0] && ps->lv[0][0] == 32767);
+        for (j = 0; j < WAV_NB; j++)
+            g[j] = fg[j];
+        wav_bscale(t->p, ps, 0, g);
+        for (j = 0; j < WAV_NB; j++) {
+            bar[j] = WAV_REG[bars_i][j] / 1024.0 * pow(10.0, -24.0 * e3 / 127.0 * (double)j / 20.0);
+            sum += bar[j];
+        }
+        norm = sum > 1.0 ? sum : 1.0;
+        for (j = 0; j < WAV_NB; j++) {
+            int32_t want = (int32_t)(fg[j] * bar[j] / norm), d = g[j] - want;
+            d = d < 0 ? -d : d;
+            if (d > worst)
+                worst = d;
+        }
+        printf("B gains: worst difference from the formula %d (Q10), sum of bars %.3f\n", worst, sum);
+        check("B: gain = filter x registration x tilt / max(1, sum) within 2 units of Q10", worst <= 2);
+        t->p[P_E7] = 127;                                  /* the fade: the top band falls to half in about a millisecond, the bottom slowly */
+        for (blk = 0; blk < 20u; blk++) {
+            for (j = 0; j < WAV_NB; j++)
+                g[j] = fg[j];
+            wav_bscale(t->p, ps, 0, g);
+        }
+        check("B: with FADE the top band is at half already, the lowest still near full", ps->lv[0][8] < 17000u && ps->lv[0][0] > 31000u);
+        t->p[P_E2] = 8 * 15;                               /* the highest registration index is valid */
+        for (j = 0; j < WAV_NB; j++)
+            g[j] = fg[j];
+        wav_bscale(t->p, ps, 0, g);
+        t->p[P_E2] = 127;
+        for (j = 0; j < WAV_NB; j++)
+            g[j] = fg[j];
+        wav_bscale(t->p, ps, 0, g);
+        check("B: BARS 127 (the last registration) and TILT 127 read inside the tables", 1);
     }
 
     /* 5. the anti-aliasing gates */
