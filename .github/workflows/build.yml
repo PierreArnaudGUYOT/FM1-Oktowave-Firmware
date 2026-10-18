@@ -88,6 +88,9 @@ jobs:
             python3 tools/build.py
           fi
           ls -la build/*.fwsc build/*.bin
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.74
       - name: Host tests (tests/run_tests.sh)
         env:
           UPDATE: ${{ github.event.inputs.update_baselines }}
@@ -114,9 +117,6 @@ jobs:
              -o build/host/wavelet_test tests/wavelet_test.c
           build/host/wavelet_test build/host | tee build/wavelet_test.log
           node tools/wavelet_ref.js build/host | tee -a build/wavelet_test.log
-      - uses: mymindstorm/setup-emsdk@v14
-        with:
-          version: 3.1.74
       - name: Browser emulator (web/emu)
         run: sh web/emu/build.sh
       - name: Site (installer + try it in the browser + manual)
