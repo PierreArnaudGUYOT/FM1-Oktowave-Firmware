@@ -86,7 +86,7 @@ static const preset_t WAVELET_PRESETS[] = {
     {"PH GLITCH", {1, 0, 23, 64, 53, 53, 2, 0}, {15, 83, 127, 73}, 0, 0, FX(0, 0, 38, 0)},   /* Phase Glitch */
 };
 
-#define WAVELET_PRESET_CAT "PFLLFPLLLPPPPFFBBBBLLLLKKKKPPPPPPPPPPPPLLLUUUFFFFDDDDOLLBPPPPPPPPLLFF"   /* category.c: one letter per preset */
+#define WAVELET_PRESET_CAT "PFLLFPLLLPPPPFFBBBBLLLLKKKKPPPPPPPPPPPPLLLUUUFFFFDDDDLLLBPPPPPPPPLLFF"   /* category.c: one letter per preset */
 
 /* the presets by name, for the power-on sounds (engines.c TRK_DEF) */
 #define WP_NOISE_WASH 0

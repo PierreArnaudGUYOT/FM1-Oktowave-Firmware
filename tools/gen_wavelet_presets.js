@@ -57,7 +57,7 @@ const defs = [];
 const letters = [];
 // the FM-1's categories (category.c: B BASS, L LEAD, P PAD, U PLUCK, K KEYS, D DRUM, F FX, O OTHER) from the VST's
 const LETTER = { 'Bass': 'B', 'Lead': 'L', 'Keys': 'K', 'Organ': 'K', 'Pad': 'P', 'Strings': 'P', 'Brass & Wind': 'L', 'Pluck': 'U',
-  'Bells & Mallets': 'U', 'FX': 'F', 'Drums & Perc': 'D', 'Init': 'O' };
+  'Bells & Mallets': 'U', 'FX': 'F', 'Drums & Perc': 'D', 'Init': 'L' };   // (Init: LEAD, so that OTHER stays empty as in Felucca)
 function letterOf(p) {
   if (p.cat !== 'Source Phase') return LETTER[p.cat] || 'O';
   const n = p.name;
