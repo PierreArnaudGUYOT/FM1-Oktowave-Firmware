@@ -34,6 +34,9 @@
 #ifdef OKTOWAVE_GROOVEBOX
 #define NENG_SHOWN 2             /* OKTOWAVE GROOVEBOX: WAVELET and DRUM are the engines one can pick (engines.c ENGINE_ORDER); the others stay in the
                                   * firmware for the projects and user presets that name them, and play */
+#elif defined(OKTOWAVE_DUO)
+#define NENG_SHOWN 3             /* OKTODUO: FM6 (the six-operator FM synth) and WAVELET (the Wavelet Synthesizer's engines A and B) are the two synths, DRUM the
+                                  * kits; the others stay in the firmware for the projects and user presets that name them, and play */
 #else
 #define NENG_SHOWN (NENGINES - !FELUCCA_FM4 - !FELUCCA_SLICE - FELUCCA_FM4)   /* (OKTOWAVE: a FELUCCA_FM4=1 test build has no WAVELET) */   /* the engines one can pick: PRESETS, the EDIT layer, the editor,
                                                 * in the display order of engines.c ENGINE_ORDER */

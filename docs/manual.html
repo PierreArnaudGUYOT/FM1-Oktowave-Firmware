@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OKTOGROOVE manual</title>
+<title>OKTODUO manual</title>
 <meta name="description" content="OKTOWAVE: the Wavelet Synthesizer's engine on the M-VAVE FM-1, as a Felucca firmware. Install, play, the WAVELET engine's parameters, the presets.">
 <style>
   :root { --bg: #fbfaf7; --fg: #1d1c1a; --dim: #6b675f; --line: #d9d4c8; --card: #f1eee6; --acc: #b5451b; --code: #ece8de; }
@@ -38,7 +38,7 @@
 </head>
 <body>
 <main>
-<h1>OKTOGROOVE <small>manual · version 0.1 · for the M-VAVE FM-1</small></h1>
+<h1>OKTODUO <small>manual · version 0.1 · for the M-VAVE FM-1</small></h1>
 <p>OKTOWAVE is an alternative firmware for the M-VAVE FM-1 pocket synthesizer: Hügelton Instruments'
 <a href="https://github.com/hugelton/Felucca">Felucca</a> 1.6.1 with one more synthesis engine, <b>WAVELET</b>, the
 subtractive engine of the <a href="https://github.com/PierreArnaudGUYOT/Free-Wavelet-Synthesizer-VST">Wavelet
@@ -48,13 +48,13 @@ audio and MIDI. This manual covers what OKTOWAVE adds; for the rest, Felucca's
 <a href="https://github.com/hugelton/Felucca/wiki/Home">wiki</a> is the reference.</p>
 
 <div class="card">
-<p><b>This is the groovebox edition (branch <code>wavelet-groovebox</code>).</b> It is Felucca's groovebox (four tracks, the sequencer,
-arpeggiator, chord keys, effects, USB audio and MIDI) with <b>WAVELET as its sound engine</b>: the engines you can pick are
-<b>WAVELET</b> (69 presets, OktoPierre's TOP Sounds first) and <b>DRUM</b> (Felucca's kits, for the rhythm tracks). The other eleven
-engines of Felucca (ANALOG, FM6, PHASE, LOFI, SAMPLE, VOICE, TRIO, WHEEL, GRAIN, PHYS, NOISE, SLICE) are no longer offered: not in the
-PRESETS list, not on the EDIT keys. They stay in the firmware, so a project or a user preset saved by Felucca or OKTOWAVE that uses
-one still loads and sounds; the EDIT page then shows the first engine for it, and choosing another engine replaces it. The edition with
-all the engines is OKTOWAVE (branch <code>main</code>). A few more details are in section 12.</p>
+<p><b>This is the duo edition (branch <code>oktoduo</code>): two synths on one Felucca groovebox.</b> It has Felucca's four tracks, 64-step
+sequencer (ratchets, chance, accents, slides, conditions), arpeggiator, chord keys, effects, USB audio and MIDI, and <b>two synths to choose
+from for each track</b>: <b>FM6</b>, Felucca's six-operator FM synth (32 algorithms, the DX-style voices and the voice bank), and <b>WAVELET</b>,
+the Wavelet Synthesizer's engines A and B (108 presets, OktoPierre's TOP Sounds first), plus <b>DRUM</b>, Felucca's kits, for the rhythm
+tracks. The other engines of Felucca (ANALOG, PHASE, LOFI, SAMPLE, VOICE, TRIO, WHEEL, GRAIN, PHYS, NOISE, SLICE) are not offered; they stay in
+the firmware, so a project or a user preset saved by Felucca or OKTOWAVE that uses one still loads and sounds (the EDIT page then shows the first
+engine for it). The editions with more engines are OKTOWAVE (all of them) and OKTOGROOVE (WAVELET and DRUM only). Section 12 has the details.</p>
 </div>
 
 <nav class="toc">
@@ -69,7 +69,7 @@ all the engines is OKTOWAVE (branch <code>main</code>). A few more details are i
 <a href="#tips">9. Sound design tips</a>
 <a href="#build">10. Build and test it yourself</a>
 <a href="#credits">11. Credits and licences</a>
-<a href="#groove">12. The groovebox edition</a>
+<a href="#groove">12. The duo edition</a>
 </nav>
 
 <div class="card warn">
@@ -400,21 +400,25 @@ GPL-3.0-only (the firmware as a whole is GPL-3.0-only). It is a port of engine A
 <li>M-VAVE and FM-1 are trademarks of their respective owners. OKTOWAVE is not affiliated with or endorsed by
 M-VAVE, nor by Hügelton Instruments.</li>
 </ul>
-<h2 id="groove">12. The groovebox edition</h2>
+<h2 id="groove">12. The duo edition</h2>
 <ul>
-<li><b>What changes</b>: the engine list (PRESETS knob 2 / ENG column, the EDIT layer's white keys: WAVELET first, DRUM second) and the
-power-on and project defaults (the four WAVELET / DRUM tracks of section 3 also start an empty or an older project). Nothing else:
-the sequencer, the effects, USB and MIDI, the editor protocol, the storage formats are Felucca's, byte for byte.</li>
-<li><b>Why</b>: the FM-1 is a small machine; this edition is the one to play when WAVELET is the sound you want, without the other
-engines in the way, and the base for giving WAVELET more room later (the flash and RAM of the unused engines).</li>
-<li><b>Old projects</b>: a track left on an engine this edition does not offer plays as before. It appears as the first engine on its
-page; turning the engine knob goes WAVELET, DRUM.</li>
-<li><b>Install</b>: the same package format and installer as OKTOWAVE and Felucca; the version string reads <code>OKTOGROOVE v0.1</code>.
-Both editions can be installed one over the other; projects saved with one load in the other (a WAVELET track needs an edition that
-has WAVELET).</li>
-<li><b>Try it in the browser</b>: the page of this edition under <code>/groovebox/</code> on the project's site.</li>
+<li><b>The idea</b>: a groovebox with two different synths side by side: the FM synth for bells, electric pianos, basses and brass, the
+WAVELET engine for pads, strings, organs, leads and textures, each track on whichever it needs, a track of drums on the kits. The
+alternative firmware by Baud Girl for the FM-1 follows the same idea (an FM synth and a second synth, a 64-step sequencer); it is closed
+source, so this edition is built on Felucca (open source) and does not use any of its code. Baud Girl's second synth is a virtual analog
+one; here the second synth is WAVELET.</li>
+<li><b>What changes from Felucca</b>: the engine list (PRESETS knob 2 / ENG column and the EDIT layer's white keys: FM6, WAVELET, DRUM) and the
+power-on and project defaults. At power-on the four tracks play together after a press of PLAY, in C minor: track 1 the FM bass <code>FM BASS</code>
+(pattern <code>OKTOBASS</code>), track 2 the pad <code>WARM PAD</code> of WAVELET (<code>OKTOCHRD</code>), track 3 the FM electric piano
+<code>TINE EP</code> (<code>OKTOLEAD</code>), track 4 the drum kit (<code>BEAT</code>). Nothing else changes: the storage formats, the editor
+protocol, USB and MIDI are Felucca's.</li>
+<li><b>The WAVELET engine</b> is as described above (sections 4 to 8). A WAVELET part plays at most four voices, so that the FM-1 is never asked
+for more than it does for Felucca's eight ANALOG voices.</li>
+<li><b>Old projects</b>: a track left on an engine this edition does not offer plays as before; it appears as the first engine (FM6) on its page.</li>
+<li><b>Install and try</b>: the same package format and installer as the other editions; the version string reads <code>OKTODUO v0.1</code>. Try it in
+the browser: the page of this edition under <code>/duo/</code> on the project's site.</li>
 </ul>
-<p class="dim">OKTOGROOVE manual, version 0.1, 2026-10-18.</p>
+<p class="dim">OKTODUO manual, version 0.1, 2026-10-18.</p>
 </main>
 </body>
 </html>

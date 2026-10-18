@@ -39,10 +39,10 @@
 #endif
 #define FM1_CPU1_USED FELUCCA_CPU2   /* hal/fm1_sys.h: the second core is built in; every reset holds it first (its
                                       * waiting loop is in RAM the ROM and the SPL use at boot) */
-#define OKTOWAVE_GROOVEBOX 1     /* this branch: WAVELET and DRUM are the engines one can pick (core.h NENG_SHOWN, engines.c) */
+#define OKTOWAVE_DUO 1           /* this branch: FM6, WAVELET and DRUM are the engines one can pick (core.h NENG_SHOWN, engines.c) */
 #define OKTOWAVE_BOOT 1          /* OKTOWAVE: the instrument powers on with the four C minor tracks (engines.c TRK_BOOT) */
 #ifndef FELUCCA_VERSION
-#define FELUCCA_VERSION "OKTOGROOVE v0.1" /* shown in the menu, the console and the editor; build.py --release X.Y */
+#define FELUCCA_VERSION "OKTODUO v0.1" /* shown in the menu, the console and the editor; build.py --release X.Y */
 #endif
 #if FELUCCA_OTA && !FELUCCA_FLASH
 #error "FELUCCA_OTA needs FELUCCA_FLASH"

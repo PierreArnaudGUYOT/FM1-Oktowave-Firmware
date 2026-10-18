@@ -121,6 +121,11 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
     ENGI_WAVELET,                /* the sound engine of this firmware */
     ENGI_DRUM,                   /* and the kits, for the rhythm tracks */
 };
+#elif defined(OKTOWAVE_DUO)
+    ENGI_FM6,                    /* the first synth: six operators, 32 algorithms */
+    ENGI_WAVELET,                /* the second: the Wavelet Synthesizer's engines A (subtractive) and B (additive) */
+    ENGI_DRUM,                   /* and the kits, for the rhythm tracks */
+};
 #else
 #if !FELUCCA_FM4
     ENGI_WAVELET,                /* WAVELET: first, the firmware's own (not in the DIGITAL test builds: they are Felucca's) */
@@ -147,6 +152,8 @@ static int eng_valid(uint32_t e)                         /* an engine that plays
 }
 #ifdef OKTOWAVE_GROOVEBOX
 static int eng_ok(uint32_t e) { return e == ENGI_WAVELET || e == ENGI_DRUM; }   /* the engines one can pick */
+#elif defined(OKTOWAVE_DUO)
+static int eng_ok(uint32_t e) { return e == ENGI_FM6 || e == ENGI_WAVELET || e == ENGI_DRUM; }   /* (an engine not offered shows as the first: FM6) */
 #else
 static int eng_ok(uint32_t e) { return eng_valid(e); }
 #endif
@@ -220,9 +227,14 @@ static const struct {
 #define NPATTERNS (sizeof PATTERNS / sizeof PATTERNS[0])
 
 /* the parts at power-on (engine, preset, PATTERNS[n - 1] in the sequencer, 0 = empty: all are): bass, pad, lead, drums */
+#ifdef OKTOWAVE_DUO
+/* OKTODUO: both synths play at once: an FM bass, a WAVELET pad, an FM electric piano lead, the drums */
+static const uint8_t TRK_BOOT[NPART][3] = {{ENGI_FM6, 2, 14}, {ENGI_WAVELET, WP_WARM_PAD, 16}, {ENGI_FM6, 0, 15}, {ENGI_DRUM, 0, 12}};
+#else
 static const uint8_t TRK_BOOT[NPART][3] = {{ENGI_WAVELET, WP_REESE_SUB, 14}, {ENGI_WAVELET, WP_WARM_PAD, 16},
                                            {ENGI_WAVELET, WP_PULSE_LEAD, 15}, {ENGI_DRUM, 0, 12}};
-#ifdef OKTOWAVE_GROOVEBOX
+#endif
+#if defined(OKTOWAVE_GROOVEBOX) || defined(OKTOWAVE_DUO)
 #define TRK_DEF TRK_BOOT           /* OKTOWAVE GROOVEBOX: what a project of an older format falls back to is this firmware's own tracks */
 #else
 static const uint8_t TRK_DEF[NPART][3] = {{0, 4, 0}, {ENGI_FM6, 4, 0}, {3, 0, 0}, {ENGI_DRUM, 0, 0}};
