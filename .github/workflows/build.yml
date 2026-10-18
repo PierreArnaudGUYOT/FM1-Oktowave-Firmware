@@ -62,9 +62,6 @@ jobs:
           echo "release=$REL" >> "$GITHUB_OUTPUT"
           echo "release: '$REL'"
       - name: Build the firmware
-        env:
-          JIELI_TOOLCHAIN: ${{ format('{0}/.jieli/toolchain', env.HOME) }}
-          AC79_SDK: ${{ format('{0}/fw-AC79_AIoT_SDK', env.HOME) }}
         run: |
           export JIELI_TOOLCHAIN="$HOME/.jieli/toolchain" AC79_SDK="$HOME/fw-AC79_AIoT_SDK"
           if [ -n "${{ steps.ver.outputs.release }}" ]; then
@@ -74,8 +71,6 @@ jobs:
           fi
           ls -la build/*.fwsc build/*.bin
       - name: Host tests (tests/run_tests.sh)
-        env:
-          AC79_SDK: ${{ format('{0}/fw-AC79_AIoT_SDK', env.HOME) }}
         run: |
           export AC79_SDK="$HOME/fw-AC79_AIoT_SDK"
           if [ "${{ github.event.inputs.update_baselines }}" = "true" ]; then
