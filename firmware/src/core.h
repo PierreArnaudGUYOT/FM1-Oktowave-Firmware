@@ -31,7 +31,7 @@
 #define NENGINES 15                     /* SLICE 13 (without FELUCCA_SLICE a reserved slot), WAVELET 14 (OKTOWAVE) */
 #define ENGI_WAVELET 14u                 /* the WAVELET engine (eng_wavelet.c): the firmware's own */
 #define ENGI_DIGITAL 1u          /* reserved without FELUCCA_FM4: never selectable (eng_ok), its sounds load as FM6 */
-#define NENG_SHOWN (NENGINES - !FELUCCA_FM4 - !FELUCCA_SLICE)   /* the engines one can pick: PRESETS, the EDIT layer, the editor,
+#define NENG_SHOWN (NENGINES - !FELUCCA_FM4 - !FELUCCA_SLICE - FELUCCA_FM4)   /* (OKTOWAVE: a FELUCCA_FM4=1 test build has no WAVELET) */   /* the engines one can pick: PRESETS, the EDIT layer, the editor,
                                                 * in the display order of engines.c ENGINE_ORDER */
 #define UP_SLOTS 32u             /* user presets (upreset.c) */
 

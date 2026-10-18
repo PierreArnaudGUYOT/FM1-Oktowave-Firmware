@@ -4032,8 +4032,8 @@ static int test_quick_layers(void)
     lay_combo(B_EDIT, white(eng_rank(2)));             /* (the keys: the engines one can pick, engines.c eng_vis) */
     ok = TSEL->eng_req == 2u && TSEL->preset == 0u && ui.layer == LAYER_EDIT && sync_reload && !gates();
     key_up(white(eng_rank(2))); frame();
-    key_down(white(2)); key_up(white(2)); frame();
-    ok &= TSEL->eng_req == ENGI_FM6;                    /* (A3: FM6, third in ENGINE_ORDER: OKTOWAVE puts WAVELET first) */
+    key_down(white(eng_rank(ENGI_FM6))); key_up(white(eng_rank(ENGI_FM6))); frame();
+    ok &= TSEL->eng_req == ENGI_FM6;                    /* (FM6: third in ENGINE_ORDER, OKTOWAVE puts WAVELET first; the DIGITAL builds: Felucca's, second) */
     key_down(white(NENG_SHOWN - 1u)); key_up(white(NENG_SHOWN - 1u)); frame();
     ok &= TSEL->eng_req == ENGI_DRUM;                   /* (the last key: DRUM) */
     ok &= !memcmp(TSEL->step, before.step, sizeof before.step) && TSEL->p[P_SLEN] == before.p[P_SLEN] &&

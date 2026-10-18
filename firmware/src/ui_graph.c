@@ -1276,6 +1276,8 @@ static const char *eng_abbr(const char *name)
             return A[i][1];
     return name;
 }
+/* an engine's name in a knob column (46 px: six letters): the longer WAVELET (OKTOWAVE) shows its tag */
+static const char *eng_col(const char *name) { return str_len(name) > 6u ? eng_abbr(name) : name; }
 
 /* a list row (17 px), in M as every list's (PRESETS, USER, PHRASES, PROJECT, AUTOMATION, MOD, the MENU): the selected
  * one a THEME bar with INK text; tag at x 14 (the widest, DRUM, to x 57), free text from x LIST_NX to x1 */
