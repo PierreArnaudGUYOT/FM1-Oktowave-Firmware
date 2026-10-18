@@ -113,6 +113,10 @@ static void felucca_init(void)
         set_engine_of(t, BOOT_DEF[i][0]);
         apply_preset_to(t, BOOT_DEF[i][1]);    /* with its sends */
         t->engine = t->eng_req;
+#ifdef OKTOWAVE_BOOT
+        if (BOOT_MONO >> i & 1u)
+            t->p[P_VOICE] = V_MONO;           /* the pad and the lead of the power-on groove (engines.c BOOT_MONO) */
+#endif
         eng_mem_claim(t);                     /* (zeros already: no note can come before) */
         track_defaults_steps(t);              /* (a sound load never touches them) */
         if (BOOT_DEF[i][2])

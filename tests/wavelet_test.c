@@ -38,6 +38,7 @@ typedef struct track {
     uint8_t xf_on;
 } track_t;
 static track_t trk[NPART];
+static struct { uint32_t cpu_q8; } song;                 /* (the audio interrupt's load: wav_tick shrinks its slice when it is high) */
 
 #include "../firmware/engines/src/dsp.c"
 #define ENG_MEM_PART 12888u

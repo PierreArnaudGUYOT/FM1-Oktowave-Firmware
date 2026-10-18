@@ -213,6 +213,9 @@ static const uint8_t TRK_DEF[NPART][3] = {{0, 4, 0}, {ENGI_FM6, 4, 0}, {3, 0, 0}
  * OKTOLEAD (two of OktoPierre's TOP Sounds), DRUM KIT + BEAT */
 static const uint8_t TRK_BOOT[NPART][3] = {{ENGI_WAVELET, WP_REESE_SUB, 14}, {ENGI_WAVELET, WP_WARM_PAD, 16},
                                            {ENGI_WAVELET, WP_PULSE_LEAD, 15}, {ENGI_DRUM, 0, 12}};
+/* OKTOWAVE: the pad and the lead of the power-on groove play MONO (legato): one voice each, so that the shared budget never takes a released
+ * voice with a long tail from the pad for a note of the lead (bit i: track i + 1) */
+#define BOOT_MONO 0x6u
 #ifdef OKTOWAVE_BOOT
 #define BOOT_DEF TRK_BOOT
 #else

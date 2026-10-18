@@ -69,7 +69,14 @@ static __attribute__((noinline)) void wav_tick(void)   /* (not inlined: its loop
                     s->snap[i] = want[i];
                 s->stage = WS_SRC;
             }
-            wav_build_step(s, WAV_QUANTUM);
+            {   /* the slice shrinks as the audio interrupt's load rises (song.cpu_q8: 256 = 100 %): a build takes longer, never the interrupt over its half */
+                int32_t q = WAV_QUANTUM;
+                if (song.cpu_q8 > 160u)
+                    q >>= 1;
+                if (song.cpu_q8 > 200u)
+                    q >>= 1;
+                wav_build_step(s, q);
+            }
             if (s->stage == WS_DONE) {
                 if (!wav_valid[p]) {                       /* nothing to fade from */
                     wav_copy_table(p, ps, s);

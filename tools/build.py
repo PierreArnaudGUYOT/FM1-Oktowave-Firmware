@@ -57,6 +57,15 @@ VERSION = None                      # FELUCCA_VERSION for release builds (defaul
 CPU2 = os.environ.get("FELUCCA_CPU2") != "0"
 
 
+def edition():
+    """the edition this tree builds: a define in firmware/src/felucca.c (OKTOGROOVE, OKTODUO), else OKTOWAVE"""
+    src = (FW / "src" / "felucca.c").read_text(encoding="utf-8")
+    for d, n in (("OKTOWAVE_DUO", "OKTODUO"), ("OKTOWAVE_GROOVEBOX", "OKTOGROOVE")):
+        if re.search(rf"^#define {d}\b", src, re.M):
+            return n
+    return "OKTOWAVE"
+
+
 def toolchain():
     tc = os.environ.get("JIELI_TOOLCHAIN")
     if not tc or not (Path(tc) / "pi32v2" / "bin" / "clang").exists():
@@ -383,8 +392,8 @@ def main():
         if not m:
             raise SystemExit(f"--release {a.release}: use X.Y, X.Y.Z, X.Y.Z.W or X.Y-suffix, one digit each")
         PRODUCT = "FM-1_9" + m[1] + m[2]
-        VERSION = "OKTOWAVE v" + a.release.lower()      # e.g. OKTOWAVE v0.1, OKTOWAVE v0.2-rc1
-        name = f"oktowave-{a.release}.fwsc"
+        VERSION = edition() + " v" + a.release.lower()      # e.g. OKTOWAVE v0.1, OKTODUO v0.2-rc1
+        name = f"{edition().lower()}-{a.release}.fwsc"
     if not (FW / "engines" / "src" / "felucca_engine.h").exists():
         raise SystemExit("firmware/engines is empty: the Felucca-Engines submodule "
                          "(git submodule update --init, or clone with --recurse-submodules)")
@@ -421,7 +430,7 @@ def main():
         rel = OUT / f"release-{a.release}"
         shutil.rmtree(rel, ignore_errors=True)
         (rel / "LICENSES").mkdir(parents=True)
-        app = f"oktowave-{a.release}-app.bin"
+        app = f"{edition().lower()}-{a.release}-app.bin"
         (rel / name).write_bytes(pkg)
         (rel / app).write_bytes(img)
         (rel / "SHA256SUMS").write_text("".join(f"{hashlib.sha256(b).hexdigest()}  {n}\n"
