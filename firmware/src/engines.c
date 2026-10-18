@@ -117,6 +117,11 @@ static const char *snd_missing(const track_t *t, uint32_t *code)
  * engine indices, never DIGITAL's reserved 1 (with FELUCCA_FM4 it follows FM6). The indices stay as they are (the
  * stores and the protocol hold them); only this table orders them */
 static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
+#ifdef OKTOWAVE_GROOVEBOX
+    ENGI_WAVELET,                /* the sound engine of this firmware */
+    ENGI_DRUM,                   /* and the kits, for the rhythm tracks */
+};
+#else
 #if !FELUCCA_FM4
     ENGI_WAVELET,                /* WAVELET: first, the firmware's own (not in the DIGITAL test builds: they are Felucca's) */
 #endif
@@ -132,19 +137,29 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
 #endif
     10,                          /* DRUM */
 };
+#endif
 
 /* the engines one can pick (engine 1 only with FELUCCA_FM4), in ENGINE_ORDER: eng_ok(e), the n-th of them
  * eng_vis(n), e's place among them eng_rank(e), the next / previous one eng_step(e, dir) (wraps) */
-static int eng_ok(uint32_t e)
+static int eng_valid(uint32_t e)                         /* an engine that plays (a stored sound may name it) */
 {
     return e < NENGINES && (FELUCCA_FM4 || e != ENGI_DIGITAL) && (FELUCCA_SLICE || e != 13u) && (!FELUCCA_FM4 || e != ENGI_WAVELET);
 }
+#ifdef OKTOWAVE_GROOVEBOX
+static int eng_ok(uint32_t e) { return e == ENGI_WAVELET || e == ENGI_DRUM; }   /* the engines one can pick */
+#else
+static int eng_ok(uint32_t e) { return eng_valid(e); }
+#endif
 static uint32_t eng_vis(uint32_t n) { return ENGINE_ORDER[n % NENG_SHOWN]; }
 static uint32_t eng_rank(uint32_t e)
 {
     uint32_t n;
     if (!eng_ok(e))
+#ifdef OKTOWAVE_GROOVEBOX
+        e = ENGI_WAVELET;                        /* (an engine this firmware does not offer: shown as the first) */
+#else
         e = ENGI_FM6;                            /* (DIGITAL without FELUCCA_FM4: its sounds play as FM6) */
+#endif
     for (n = 0; n < NENG_SHOWN && ENGINE_ORDER[n] != e; n++)
         ;
     return n < NENG_SHOWN ? n : 0u;
@@ -205,14 +220,18 @@ static const struct {
 #define NPATTERNS (sizeof PATTERNS / sizeof PATTERNS[0])
 
 /* the parts at power-on (engine, preset, PATTERNS[n - 1] in the sequencer, 0 = empty: all are): bass, pad, lead, drums */
-static const uint8_t TRK_DEF[NPART][3] = {{0, 4, 0}, {ENGI_FM6, 4, 0}, {3, 0, 0}, {ENGI_DRUM, 0, 0}}; /* ANALOG ACID,
+static const uint8_t TRK_BOOT[NPART][3] = {{ENGI_WAVELET, WP_REESE_SUB, 14}, {ENGI_WAVELET, WP_WARM_PAD, 16},
+                                           {ENGI_WAVELET, WP_PULSE_LEAD, 15}, {ENGI_DRUM, 0, 12}};
+#ifdef OKTOWAVE_GROOVEBOX
+#define TRK_DEF TRK_BOOT           /* OKTOWAVE GROOVEBOX: what a project of an older format falls back to is this firmware's own tracks */
+#else
+static const uint8_t TRK_DEF[NPART][3] = {{0, 4, 0}, {ENGI_FM6, 4, 0}, {3, 0, 0}, {ENGI_DRUM, 0, 0}};
+#endif /* ANALOG ACID,
                                                                        * FM6 PAD (was DIGITAL PAD), LOFI PULSE LD, DRUM KIT: Felucca's, what a project
                                                                        * of an older format falls back to (project.c) and what the host tests expect */
 /* OKTOWAVE: the instrument's power-on tracks (felucca.c and the browser build define OKTOWAVE_BOOT; the host tests do not,
  * so they see Felucca's): all in C minor, press PLAY. WAVELET REESE SUB + OKTOBASS, WARM PAD + OKTOCHRD, PULSE LEAD +
  * OKTOLEAD (two of OktoPierre's TOP Sounds), DRUM KIT + BEAT */
-static const uint8_t TRK_BOOT[NPART][3] = {{ENGI_WAVELET, WP_REESE_SUB, 14}, {ENGI_WAVELET, WP_WARM_PAD, 16},
-                                           {ENGI_WAVELET, WP_PULSE_LEAD, 15}, {ENGI_DRUM, 0, 12}};
 #ifdef OKTOWAVE_BOOT
 #define BOOT_DEF TRK_BOOT
 #else
