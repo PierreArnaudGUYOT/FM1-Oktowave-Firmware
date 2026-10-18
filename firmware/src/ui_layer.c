@@ -76,7 +76,9 @@ static const page_t *ly_page(uint32_t l) { return l == LAYER_SCL ? &LY_SCL : l =
 #define LY_DEAD 8u                     /* .. pressed where there is no layer: does nothing */
 #define LY_INIT ((uint32_t)NENG_SHOWN) /* EDIT: the white key of INIT, the one after the engines (13: E5), its map cell */
 #define LY_CLEAN (LY_INIT + 1u)         /* .. and CLEAN INIT's, the next (1.5.5, #190: F5) */
-typedef char ly_init_fits[LY_CLEAN < 16u ? 1 : -1];   /* (a white key: F3 .. G5) */
+typedef char ly_init_fits[LY_CLEAN < 16u || FELUCCA_FM4 ? 1 : -1];   /* (a white key: F3 .. G5. OKTOWAVE: 14 engines + INIT + CLEAN INIT fill the 16;
+                                                                         * the retired DIGITAL (FELUCCA_FM4=1, host tests only) is one more: its INIT keys
+                                                                         * have no key there, the device never builds it) */
 #define layer_seen (favorites.factory[15][31])   /* bit l: layer l opened once (a byte no engine uses) */
 static const khint_t FX_LATCH_FOOT[3] = {{KC_KEYS, "ON / OFF"}, {KC_K14, "MACROS"}, {KC_OCTDN, "ALL OFF"}};
 static const khint_t FX_KEY_FOOT[3] = {{KC_PRESETS, "ASSIGN"}, {KC_EDIT, "DEFAULT"}, {KC_K14, "MACROS"}};   /* (a key held) */
