@@ -130,6 +130,11 @@ jobs:
               "build/host/${ED}_test" | tee "build/${ED}_test.log"
             fi
           done
+      - name: "The shared voice budget with WAVELET's weight (tests/budget_test.c)"
+        if: always()
+        run: |
+          cc -w -Ibuild/gen -Ifirmware/src -o build/host/budget_test tests/budget_test.c -lm
+          build/host/budget_test | tee build/budget_test.log
       - name: Browser emulator (web/emu)
         run: sh web/emu/build.sh
       - name: Site (installer + try it in the browser + manual)

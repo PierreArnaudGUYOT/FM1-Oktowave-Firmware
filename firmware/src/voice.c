@@ -122,12 +122,16 @@ static uint32_t trk_vmode(const track_t *t)
 }
 
 /* ------------------------------------------------- the shared voice budget --- */
-static uint32_t voices_busy(void)                       /* sounding voices of all parts (not the fading ones) */
+/* OKTOWAVE: a WAVELET voice costs about twice an ANALOG voice (the measured ratio, 1.6 to 2.3 on a computer, 2 with a window): it counts double in the
+ * budget of NVOICE units, so that the FM-1 is never asked for more than for eight ANALOG voices. Every other engine counts one: the
+ * behaviour of Felucca's own sounds is unchanged. */
+static uint32_t voice_weight(const track_t *t) { return t->engine == ENGI_WAVELET ? 2u : 1u; }
+static uint32_t voices_busy(void)                       /* sounding voices of all parts (not the fading ones), in budget units */
 {
     uint32_t p, i, n = 0;
     for (p = 0; p < NPART; p++)
         for (i = 0; i < NVOICE; i++)
-            n += trk[p].v[i].active && trk[p].v[i].stage != 4u;
+            n += (trk[p].v[i].active && trk[p].v[i].stage != 4u) ? voice_weight(&trk[p]) : 0u;
     return n;
 }
 
@@ -187,14 +191,14 @@ static void voice_kill(voice_t *v)                      /* fade out over the nex
 static int voice_room(track_t *t, int soft)
 {
     track_t *vp = 0;
-    uint32_t k;
-    if (voices_busy() < NVOICE)
-        return 1;
-    k = voice_victim(t, soft, &vp);
-    if (k == NVOICE)
-        return !soft;                                   /* hard: over the budget (cannot happen: each of the
+    uint32_t k, w = voice_weight(t);
+    while (voices_busy() + w > NVOICE) {                /* (one pass for a weight of 1, as before) */
+        k = voice_victim(t, soft, &vp);
+        if (k == NVOICE)
+            return !soft;                               /* hard: over the budget (cannot happen: each of the
                                                          * NPART < NVOICE parts protects one voice at most) */
-    voice_kill(&vp->v[k]);
+        voice_kill(&vp->v[k]);
+    }
     return 1;
 }
 
@@ -227,13 +231,14 @@ static voice_t *voice_alloc(track_t *t, uint32_t note)
             return voice_reuse(t, &t->v[i]);
         nfree += !t->v[i].active;
     }
-    if (nfree && voices_busy() >= NVOICE) {
+    while (nfree && voices_busy() + voice_weight(t) > NVOICE) {   /* (one pass for a weight of 1, as before) */
         track_t *vp = 0;
         uint32_t k = voice_victim(t, 0, &vp);
         if (k < np && vp == t)
             return &t->v[k];                            /* our own: restart it in place (no click) */
-        if (k < NVOICE)
-            voice_kill(&vp->v[k]);
+        if (k >= NVOICE)
+            break;
+        voice_kill(&vp->v[k]);
     }
     if (t->p[P_ALLOC] || t->p[P_GLIDE]) {
         for (i = 0; i < np; i++) {

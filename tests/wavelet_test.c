@@ -29,11 +29,13 @@
 #include "felucca_tables.h"            /* python3 tools/gen_tables.py build/host/felucca_tables.h (the engine tables and the envelope ones) */
 #include "../firmware/engines/src/felucca_engine.h"
 
-enum { P_ATK, P_REL, P_FTYPE, P_E0, P_E1, P_E2, P_E3, P_E4, P_E5, P_E6, P_E7, P_COUNT };
+enum { P_ATK, P_SUS, P_REL, P_FTYPE, P_E0, P_E1, P_E2, P_E3, P_E4, P_E5, P_E6, P_E7, P_COUNT };
 typedef struct track {
     int16_t p[P_COUNT];
     voice_t v[NVOICE];
     uint8_t engine;
+    uint8_t eng_req;                                    /* (the part's engine asked for, and the cross-fade of an engine change: wav_tick skips a part that changes engine) */
+    uint8_t xf_on;
 } track_t;
 static track_t trk[NPART];
 
@@ -160,7 +162,7 @@ static void part_reset(track_t *t, uint32_t engine)
         if (wav_scr.owner == pi + 1u)
             wav_scr.owner = 0;
     }
-    t->engine = (uint8_t)engine;
+    t->engine = t->eng_req = (uint8_t)engine;
     vage = 0;
 }
 
@@ -333,7 +335,7 @@ int main(int argc, char **argv)
                 check(path, !memcmp(ps->t, ps->t + WAV_N * WAV_NL, WAV_NL * sizeof(int16_t)));
                 printf("table wave %u wvlt %-5s sprs %-3d: %4u blocks %7u macs, DRY peak %5d, layer peak %5d\n",
                        w, N_WVLT[wl], t->p[P_E3], blocks, macs, peak, maxlay);
-                if ((w == 0u || w == 2u || w == 5u || w == 6u || w == 9u || w == 11u) && (wl == 0u || wl == 2u || wl == 6u)) {
+                if ((w == 0u || w == 2u || w == 5u || w >= 6u) && (wl == 0u || wl == 2u || wl == 6u)) {
                     FILE *f;
                     snprintf(path, sizeof path, "%s/table_w%u_l%u_s%d.txt", outdir, w, wl, t->p[P_E3]);
                     f = fopen(path, "w");
@@ -422,6 +424,7 @@ int main(int argc, char **argv)
                 if (WAV_IS_B(WV_E0[wv])) {                   /* engine B: the scale envelope done swelling, so that the gains are steady */
                     uint32_t q;
                     WAV_PART(t)->atk[0] = 0;
+                    WAV_PART(t)->ap[0] = 1u << 24;
                     for (q = 0; q < WAV_NB; q++)
                         WAV_PART(t)->lv[0][q] = 32767;
                 }
@@ -600,13 +603,28 @@ int main(int argc, char **argv)
         }
         printf("B gains: worst difference from the formula %d (Q10), sum of bars %.3f\n", worst, sum);
         check("B: gain = filter x registration x tilt / max(1, sum) within 2 units of Q10", worst <= 2);
-        t->p[P_E7] = 127;                                  /* the fade: the top band falls to half in about a millisecond, the bottom slowly */
-        for (blk = 0; blk < 20u; blk++) {
+        t->p[P_E7] = 127;                                  /* the fade: every band falls toward SUS (0 here), the top one in about a millisecond, the lowest in about six */
+        for (blk = 0; blk < 3u; blk++) {                   /* 2 ms: the top band (1 ms) is gone, the lowest (6 ms) has fallen a part of the way */
             for (j = 0; j < WAV_NB; j++)
                 g[j] = fg[j];
             wav_bscale(t->p, ps, 0, g);
         }
-        check("B: with FADE the top band is at half already, the lowest still near full", ps->lv[0][8] < 17000u && ps->lv[0][0] > 31000u);
+        check("B: with FADE the top band is gone toward SUS, the lowest still falling (higher)", ps->lv[0][8] < 500u && ps->lv[0][0] > ps->lv[0][8] + 3000u && ps->lv[0][3] > ps->lv[0][6]);
+        t->p[P_SUS] = 100;                                 /* the level they fall to is SUS: 100 / 127 here */
+        for (blk = 0; blk < 400u; blk++) {
+            for (j = 0; j < WAV_NB; j++)
+                g[j] = fg[j];
+            wav_bscale(t->p, ps, 0, g);
+        }
+        check("B: the bands settle at the SUS level (100 / 127 of 32767)", ps->lv[0][8] > 25000u && ps->lv[0][8] < 26500u);
+        t->p[P_E7] = 0;                                    /* FADE 0 on a sounding voice: the bands come back to full */
+        for (blk = 0; blk < 12u; blk++) {
+            for (j = 0; j < WAV_NB; j++)
+                g[j] = fg[j];
+            wav_bscale(t->p, ps, 0, g);
+        }
+        check("B: FADE back to 0 restores the bands", ps->lv[0][8] > 32500u && ps->lv[0][0] > 32500u);
+        t->p[P_E7] = 127;
         t->p[P_E2] = 8 * 15;                               /* the highest registration index is valid */
         for (j = 0; j < WAV_NB; j++)
             g[j] = fg[j];
@@ -616,6 +634,122 @@ int main(int argc, char **argv)
             g[j] = fg[j];
         wav_bscale(t->p, ps, 0, g);
         check("B: BARS 127 (the last registration) and TILT 127 read inside the tables", 1);
+    }
+
+    /* 10. engine B's table does not depend on BARS, TILT or FADE (no rebuild), but does on the pattern and the wavelet */
+    {
+        track_t *t = &trk[0];
+        uint32_t blk, busy = 0, started = 0;
+        part_reset(t, E_WAV);
+        t->p[P_E0] = 7;
+        t->p[P_E1] = 2;
+        build_table(t);
+        t->p[P_E2] = 40; t->p[P_E3] = 90; t->p[P_E7] = 60;
+        for (blk = 0; blk < 40u; blk++) {
+            wav_tick();
+            busy += wav_scr.owner != 0;
+        }
+        check("B: changing BARS, TILT and FADE starts no build (the table is the same)", busy == 0);
+        t->p[P_E0] = 8;                                    /* another pattern */
+        wav_tick();
+        started = wav_scr.owner != 0;
+        check("B: another pattern starts a build at once", started);
+        for (blk = 0; blk < 100u && wav_scr.owner; blk++)
+            wav_tick();
+        t->p[P_E1] = 4;                                    /* another wavelet */
+        wav_tick();
+        check("B: another wavelet starts a build too", wav_scr.owner != 0);
+        for (blk = 0; blk < 100u && wav_scr.owner; blk++)
+            wav_tick();
+        t->p[P_E0] = 2;                                    /* to engine A: the table is rebuilt (E2 / E3 count again) */
+        wav_tick();
+        check("A <-> B: a change of family starts a build", wav_scr.owner != 0);
+    }
+
+    /* 11. a re-struck voice keeps its scale level and swells again from it; a fresh one starts at 0; voices are independent */
+    {
+        track_t *t = &trk[1];
+        wav_part_t *ps;
+        uint32_t j, ok1;
+        part_reset(t, E_WAV);
+        t->p[P_E0] = 7;
+        build_table(t);
+        ps = WAV_PART(t);
+        voice_on(t, &ENG_WAVELET, &t->v[0], 48, 0);        /* fresh: voice_on zeroes env first, as voice_start does */
+        ok1 = ps->atk[0] == 1u && ps->lv[0][0] == 0u && ps->ap[0] == 0u;
+        for (j = 0; j < WAV_NB; j++)
+            ps->lv[0][j] = 20000;
+        t->v[0].env = 1 << 22;                             /* sounding */
+        t->v[0].stage = 2;
+        voice_on(t, &ENG_WAVELET, &t->v[0], 48, 0);        /* re-struck while sounding */
+        check("B: a fresh voice's scale starts at 0 and swells", ok1);
+        check("B: a re-struck sounding voice keeps its level (20000) and swells again from it",
+              ps->lv[0][0] == 20000u && ps->atk[0] == 1u && ps->ap[0] == (20000u << 9));
+        for (j = 0; j < WAV_NB; j++) {
+            ps->lv[1][j] = 0;                              /* voice 1 silent, voice 0 full: each renders with its own scale */
+            ps->lv[0][j] = 32767;
+        }
+        ps->atk[0] = ps->atk[1] = 0;
+        ps->ap[0] = ps->ap[1] = 1u << 24;
+        {
+            int32_t o0[CTL], o1[CTL], p0 = 0, p1 = 0;
+            uint32_t b2, i;
+            vmod_t m;
+            voice_on(t, &ENG_WAVELET, &t->v[1], 48, 0);
+            t->v[1].env = 0;                               /* (a fresh one: but keep its scale as set below) */
+            memset(&m, 0, sizeof m);
+            m.pitch16 = 48 * 16;
+            m.inc = pitch_inc(48 * 16);
+            m.amp0 = m.amp1 = 20000;
+            m.shape = 64 << 8;
+            for (b2 = 0; b2 < 1u; b2++) {                  /* (one block: FADE 0 brings a quiet voice's bands back, a quarter of the way a block) */
+                for (j = 0; j < WAV_NB; j++) {
+                    ps->lv[1][j] = 0;
+                    ps->lv[0][j] = 32767;
+                }
+                ps->atk[0] = ps->atk[1] = 0;
+                memset(o0, 0, sizeof o0);
+                memset(o1, 0, sizeof o1);
+                ENG_WAVELET.render(t, &t->v[0], o0, CTL, &m);
+                ENG_WAVELET.render(t, &t->v[1], o1, CTL, &m);
+                for (i = 0; i < CTL; i++) {
+                    int32_t a0 = o0[i] < 0 ? -o0[i] : o0[i], a1 = o1[i] < 0 ? -o1[i] : o1[i];
+                    p0 = a0 > p0 ? a0 : p0;
+                    p1 = a1 > p1 ? a1 : p1;
+                }
+            }
+            printf("two voices: peaks %d and %d\n", p0, p1);
+            check("B: two voices render with their own scale levels (full against just restarting)", p0 > 200 && p1 < p0 / 2);
+        }
+    }
+
+    /* 12. a change from engine A to B (or back) with a note held: the gain law follows the table held, so the note neither dips nor jumps */
+    {
+        track_t *t = &trk[2];
+        int32_t out[CTL], before = 0, during = 0, last[NVOICE] = {0};
+        uint32_t b, i;
+        part_reset(t, E_WAV);
+        t->p[P_E0] = 0;
+        t->p[P_E1] = 2;
+        t->p[P_E4] = 90;
+        build_table(t);
+        voice_on(t, &ENG_WAVELET, &t->v[0], 48, 0);
+        t->v[0].stage = 2;
+        for (b = 0; b < 30u; b++) {
+            render_block(t, out, b, last, 0);
+            if (b >= 20u)
+                for (i = 0; i < CTL; i++)
+                    before = out[i] > before ? out[i] : before;
+        }
+        t->p[P_E0] = 7;                                    /* to engine B: the table is rebuilt, the old one plays on with the old law */
+        t->p[P_E2] = 8;
+        for (b = 30; b < 36u; b++) {
+            render_block(t, out, b, last, 0);
+            for (i = 0; i < CTL; i++)
+                during = out[i] > during ? out[i] : during;
+        }
+        check("A -> B with a note held: the note neither dips nor jumps while the table is built (peak within 25 %)",
+              before > 1000 && during > before * 3 / 4 && during < before * 5 / 4);
     }
 
     /* 5. the anti-aliasing gates */

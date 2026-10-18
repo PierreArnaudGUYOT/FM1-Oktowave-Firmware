@@ -17,7 +17,7 @@
  * from a pattern instead of a source wave (no forward transform, no sparsity); each band's layer is peak-normalised,
  * and a voice's gain per band is  registration x tilt x scale envelope x filter / norm: BARS picks one of 16
  * registrations of the nine bands (the VST's drawbars), TILT is the dB per band, the scale envelope swells over the
- * amp ATK and, with FADE, the upper bands fall to half faster than the lower ones. In that mode EDIT 1 / 2 read
+ * amp ATK and, with FADE, the bands fall toward the SUS level, the faster the higher the band. In that mode EDIT 1 / 2 read
  * WAVE WVLT BARS TILT / CUT RES FLT FADE.
  *
  * What the FM-1 version leaves out (the VST / web app has it): wavelet morphing, LFO 2, the sub oscillator, key
@@ -40,8 +40,8 @@
  *
  * Tables: a part's engine memory holds its table (wav_part_t); a change of E0 .. E3 rebuilds it. The build
  * runs in the audio interrupt, a bounded slice per block (WAV_QUANTUM multiply-adds), in one shared scratch
- * (wav_scr, the pool): source, forward DWT level by level, sparsify, then each band's inverse DWT, 20 .. 400
- * thousand multiply-adds (Haar .. DB20), so 10 .. 150 ms with no audible cost. wav_tick() (fx.c mix_block,
+ * (wav_scr, the pool): source, forward DWT level by level, sparsify, then each band's inverse DWT, 14 .. 193
+ * thousand multiply-adds (Haar .. DB20), so 5 .. 64 blocks of 32 samples (4 .. 46 ms) with no audible cost. wav_tick() (fx.c mix_block,
  * core 0, before the parts render on either core) drives it: it starts a build when a WAVELET part's E0 .. E3
  * differ from its table's, restarts it when they move again, and when it is done the part cross-fades from
  * its table to the new one over WAV_XF blocks, then the new table is copied over the old (in wav_tick: no
@@ -83,6 +83,7 @@ typedef struct {
     int16_t t[WAV_TSIZE];                           /* the table: row i = the layers at sample i, Q14 */
     int16_t g0[NVOICE][WAV_NB];                     /* each voice's band gains at the end of its last block, Q10 */
     uint16_t lv[NVOICE][WAV_NB];                    /* engine B: each voice's scale envelope per band, Q15 */
+    uint32_t ap[NVOICE];                            /* engine B: the swell's progress, Q24 (the amp attack's own table steps it) */
     uint8_t atk[NVOICE];                            /* engine B: 1 while the scale envelope swells (the same for every band) */
 } wav_part_t;
 /* what says whether t[] is the table of the part's sound lives outside the engine memory (another engine may use
@@ -389,6 +390,7 @@ static __attribute__((noinline)) void wav_build_step(wav_scratch_t *s, int32_t b
                 s->k = 0;
                 if (M >= WAV_N) {                       /* (band 9: its level is the cycle) */
                     wav_layer_out(s, out);
+                    budget -= 1536;                     /* (the peak scan and the scaling of a layer count in the slice) */
                     s->band++;
                     s->stage = s->band < WAV_NB ? WS_BANDA : wav_done(s);
                     s->M = (uint16_t)(2u << s->band);
@@ -422,6 +424,7 @@ static __attribute__((noinline)) void wav_build_step(wav_scratch_t *s, int32_t b
                 s->k = 0;
                 if (M >= WAV_N) {                       /* the layer is complete */
                     wav_layer_out(s, out);
+                    budget -= 1536;                     /* (the peak scan and the scaling of a layer count in the slice) */
                     s->band++;
                     s->stage = s->band < WAV_NB ? WS_BANDA : wav_done(s);
                     s->M = (uint16_t)(2u << s->band);
@@ -516,13 +519,16 @@ static int32_t wav_db_to_q10w(int32_t dbq8)
 /* engine B: the gain of each band of a voice, from the filter's gains g (in) to the final ones (out), Q10.
  *   bar_j  = registration_j x tilt^j       TILT: 0 .. -24 dB per band over E3 0 .. 127
  *   norm   = max(1, sum of bar)            (as the VST: the sum of the bars, never boosting)
- *   gain_j = filter_j x bar_j / norm x lv_j  the scale envelope lv_j: it swells with the amp ATK, then, with FADE (E7 > 0),
- *            falls to half the faster the higher the band (E7 127: the top band in a millisecond, the lowest in 10 s) */
+ *   gain_j = filter_j x bar_j / norm x lv_j  the scale envelope lv_j (Q15): it swells over the amp ATK (the same table steps it, so the
+ *            swell lasts as long); then, with FADE (E7 > 0), each band falls toward the SUS level, the faster the higher the band: the
+ *            top band takes the time FADE gives (E7 127: a millisecond), the lowest band 25 steps of the time scale longer (about
+ *            6 times: the VST's presets have a body decay 3 to 8 times their bright decay); with FADE 0 the bands come back to full.
+ *   A retriggered, sounding voice keeps its level and swells again from it (wavelet_note_on). */
 static void wav_bscale(const int16_t *p, wav_part_t *ps, uint32_t vi, int32_t *g)
 {
     const uint16_t *reg = WAV_REG[(uint32_t)clamp(p[P_E2], 0, 127) >> 3];
     int32_t tilt_q8 = -(clamp(p[P_E3], 0, 127) * 6144 / 127);   /* dB per band, Q8: 0 .. -24 dB (6144 = 24 x 256) */
-    int32_t fade = clamp(p[P_E7], 0, 127), idx7 = 127 - fade;
+    int32_t fade = clamp(p[P_E7], 0, 127), idx7 = 127 - fade, idxb = idx7 + 25 > 127 ? 127 : idx7 + 25;
     int32_t bar[WAV_NB], sum = 0, norm;
     uint16_t *lv = ps->lv[vi];
     uint32_t j;
@@ -532,21 +538,29 @@ static void wav_bscale(const int16_t *p, wav_part_t *ps, uint32_t vi, int32_t *g
     }
     norm = sum > 1024 ? sum : 1024;
     if (ps->atk[vi]) {                                  /* the swell: every band the same, over the amp attack */
-        int32_t step = (int32_t)(ENV_LIN[clamp(p[P_ATK], 0, 127)] >> 9) + 1;
-        int32_t l = (int32_t)lv[0] + step;
-        if (l >= 32767) {
-            l = 32767;
+        uint32_t ap = ps->ap[vi] + ENV_LIN[clamp(p[P_ATK], 0, 127)];
+        int32_t l;
+        if (ap >= (1u << 24)) {
+            ap = 1u << 24;
             ps->atk[vi] = 0;
+            l = 32767;
+        } else {
+            l = (int32_t)(ap >> 9);
         }
+        ps->ap[vi] = ap;
         for (j = 0; j < WAV_NB; j++)
             lv[j] = (uint16_t)l;
-    } else if (fade > 0) {                              /* the fall to half, a time per band: idx7 at the top, 127 at the bottom */
+    } else if (fade > 0) {                              /* the fall toward the SUS level, a time per band */
+        int32_t floor_ = clamp(p[P_SUS], 0, 127) * 258;
         for (j = 0; j < WAV_NB; j++) {
-            int32_t idx = idx7 + ((127 - idx7) * (int32_t)(WAV_NB - 1u - j)) / (int32_t)(WAV_NB - 1u);
+            int32_t idx = idx7 + ((idxb - idx7) * (int32_t)(WAV_NB - 1u - j)) / (int32_t)(WAV_NB - 1u);
             int32_t l = (int32_t)lv[j];
-            l += ((16384 - l) * (int32_t)ENV_EXP[clamp(idx, 0, 127)]) >> 16;   /* (|16384 - l| x 65535 < 2^31) */
+            l += ((floor_ - l) * (int32_t)ENV_EXP[clamp(idx, 0, 127)]) >> 16;   /* (|floor - l| x 65535 < 2^31) */
             lv[j] = (uint16_t)clamp(l, 0, 32767);
         }
+    } else {                                            /* FADE 0: the bands come back to full (a few blocks) */
+        for (j = 0; j < WAV_NB; j++)
+            lv[j] = (uint16_t)((int32_t)lv[j] + ((32767 - (int32_t)lv[j]) >> 2));
     }
     for (j = 0; j < WAV_NB; j++)
         g[j] = ((g[j] * bar[j] / norm) * (int32_t)lv[j]) >> 15;   /* (g <= 16384, bar <= 1024: 2^24; then x lv <= 2^15) */
@@ -558,9 +572,14 @@ static void wavelet_note_on(track_t *t, voice_t *v)
     wav_part_t *ps = WAV_PART(t);
     uint32_t vi = (uint32_t)(v - t->v) % NVOICE, j;
     v->s[0] = 0;                                        /* the gains start where this block puts them */
-    ps->atk[vi] = 1;                                    /* engine B: the scale envelope swells again */
-    for (j = 0; j < WAV_NB; j++)
-        ps->lv[vi][j] = 0;
+    if (!v->env) {                                      /* a fresh voice (voice_start zeroes env only then): engine B's scale starts at 0 */
+        for (j = 0; j < WAV_NB; j++)
+            ps->lv[vi][j] = 0;
+        ps->ap[vi] = 0;
+    } else {                                            /* a sounding one (re-struck, stolen, retriggered): it keeps its level and swells again from it */
+        ps->ap[vi] = (uint32_t)ps->lv[vi][0] << 9;
+    }
+    ps->atk[vi] = 1;
 }
 
 static const param_desc_t WAVELET_WIDTH = {"WDTH", F_PCT, 0, 127, 0, 0, 0};
@@ -569,7 +588,7 @@ static const param_desc_t WAVELET_TILT = {"TILT", F_PCT, 0, 127, 0, 0, 0};   /* 
 static const param_desc_t WAVELET_FADE = {"FADE", F_PCT, 0, 127, 0, 0, 0};   /* .. 0 = none */
 static const param_desc_t *wavelet_desc(const track_t *t, uint32_t k)
 {
-    if (WAV_IS_B(t->p[P_E0]))
+    if (WAV_IS_B(clamp(t->p[P_E0], 0, 11)))
         return k == 2u ? &WAVELET_BARS : k == 3u ? &WAVELET_TILT : k == 7u ? &WAVELET_FADE : 0;
     if (k == 2u && (t->p[P_E0] == WW_PLS || t->p[P_E0] == WW_TRI))
         return &WAVELET_WIDTH;
@@ -637,7 +656,7 @@ static void wavelet_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
     int32_t g1[WAV_NB], g[WAV_NB];
     wav_gs_t gs, gts;
     int32_t cutq8 = (clamp(p[P_E4], 0, 127) * 3072 + m->cutoff * 24) / 127;
-    int32_t pd = WAV_IS_B(p[P_E0]) ? 0 : clamp(p[P_E7], 0, 127) * 258;   /* WNDW depth, Q15 (engine B: E7 is FADE, no window) */
+    int32_t pd;                                         /* WNDW depth, Q15 (engine B: E7 is FADE, no window) */
     uint32_t ph = v->ph[0], inc = m->inc, i, j;
     uint32_t pc = (uint32_t)(m->shape - (64 << 8)) << 17;   /* the window's centre: 0 at SHAPE's default (the VST's POSITION 0);
                                                          * the SHP amounts move it, a whole cycle over the knob's range */
@@ -647,9 +666,20 @@ static void wavelet_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
     int32_t gate[WAV_NB];
     if (!wav_valid[pi])
         return;
-    wav_gains(p, cutq8, inc, g1, gate);
-    if (WAV_IS_B(p[P_E0]))
-        wav_bscale(p, ps, (uint32_t)(v - t->v) % NVOICE, g1);
+    {   /* the gain law is that of the table held (a change of engine A <-> B leads it by the build and the fade) */
+        int isb = WAV_IS_B(wav_snap[pi][0]);
+        uint32_t vi = (uint32_t)(v - t->v) % NVOICE;
+        pd = isb ? 0 : clamp(p[P_E7], 0, 127) * 258;
+        wav_gains(p, cutq8, inc, g1, gate);
+        if (isb) {
+            wav_bscale(p, ps, vi, g1);
+        } else {                                        /* engine A: the scale envelope is full, so a note held across a change to B does not dip */
+            ps->atk[vi] = 0;
+            ps->ap[vi] = 1u << 24;
+            for (j = 0; j < WAV_NB; j++)
+                ps->lv[vi][j] = 32767;
+        }
+    }
     if (!v->s[0]) {
         for (j = 0; j < WAV_NB; j++)
             g0[j] = (int16_t)g1[j];
@@ -720,7 +750,7 @@ static const engine_t ENG_WAVELET = {
     .note_on = wavelet_note_on,
     .render = wavelet_render,
     .knob = {P_E4, P_E5, P_E3, P_REL},
-    .poly = 4,                                          /* a voice costs about twice ANALOG's: 4 voices = ANALOG's 8 (the FM-1 is small: no overload) */
+    .poly = 3,                                          /* a part plays three voices at most; a WAVELET voice also counts double in the shared budget of eight (voice.c voice_weight): the FM-1 is small, no overload */
     .keep = 0x01,                                       /* the gains' ramp goes on over a retrigger */
     .desc = wavelet_desc,
     .mem = sizeof(wav_part_t),
