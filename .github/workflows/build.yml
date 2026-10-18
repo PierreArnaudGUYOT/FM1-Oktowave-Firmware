@@ -1,0 +1,146 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Copyright (C) 2026 Pierre Arnaud GUYOT (OktoPierre)
+# OKTOWAVE firmware for the M-VAVE FM-1: built on GitHub's Linux runners (the JieLi pi32v2 toolchain is Linux
+# x86-64 only), the host tests, the browser emulator (Emscripten) and the site (installer + try + manual).
+#   push / pull request: build + tests; artifacts: the package (.fwsc), the test output, the site
+#   workflow_dispatch: the same, with `update_baselines` to rewrite tests/golden.txt, cpu_baseline.txt,
+#   target_budget.txt (uploaded as an artifact to commit by hand)
+#   a tag vX.Y: a release build (identity FM-1_9XY, oktowave-X.Y.fwsc) and the site deployed to GitHub Pages
+name: build
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      update_baselines:
+        description: "rewrite the golden / CPU / target baselines (GOLDEN_UPDATE=1 BUDGET_UPDATE=1)"
+        type: boolean
+        default: false
+      release:
+        description: "release version X.Y (empty: a dev build)"
+        type: string
+        default: ""
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Python packages (the fonts and icons are rasterised at build time)
+        run: pip install Pillow fonttools
+      - name: JieLi pi32v2 toolchain (clang 4.0.1, from JieLi's package server)
+        run: |
+          sh tools/get_toolchain.sh "$HOME/.jieli"
+          ls "$HOME/.jieli/toolchain/pi32v2/bin" | head -5
+      - name: JieLi AC79 SDK files (Apache-2.0: uboot.boot, cfg_tool.bin, eq_cfg_hw.bin; SHA-256 checked by build.py)
+        run: |
+          git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 --filter=blob:none --sparse \
+              https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"
+          cd "$HOME/fw-AC79_AIoT_SDK" && git sparse-checkout set cpu/wl82/tools && ls cpu/wl82/tools | head
+      - name: Version
+        id: ver
+        run: |
+          REL="${{ github.event.inputs.release }}"
+          case "${{ github.ref }}" in refs/tags/v*) REL="${GITHUB_REF#refs/tags/v}";; esac
+          echo "release=$REL" >> "$GITHUB_OUTPUT"
+          echo "release: '$REL'"
+      - name: Build the firmware
+        env:
+          JIELI_TOOLCHAIN: ${{ format('{0}/.jieli/toolchain', env.HOME) }}
+          AC79_SDK: ${{ format('{0}/fw-AC79_AIoT_SDK', env.HOME) }}
+        run: |
+          export JIELI_TOOLCHAIN="$HOME/.jieli/toolchain" AC79_SDK="$HOME/fw-AC79_AIoT_SDK"
+          if [ -n "${{ steps.ver.outputs.release }}" ]; then
+            python3 tools/build.py --release "${{ steps.ver.outputs.release }}"
+          else
+            python3 tools/build.py
+          fi
+          ls -la build/*.fwsc build/*.bin
+      - name: Host tests (tests/run_tests.sh)
+        env:
+          AC79_SDK: ${{ format('{0}/fw-AC79_AIoT_SDK', env.HOME) }}
+        run: |
+          export AC79_SDK="$HOME/fw-AC79_AIoT_SDK"
+          if [ "${{ github.event.inputs.update_baselines }}" = "true" ]; then
+            GOLDEN_UPDATE=1 BUDGET_UPDATE=1 sh tests/run_tests.sh 2>&1 | tee build/tests.log
+          else
+            sh tests/run_tests.sh 2>&1 | tee build/tests.log
+          fi
+      - name: WAVELET engine: the standalone host test and the floating-point reference
+        if: always()
+        run: |
+          mkdir -p build/host
+          python3 firmware/engines/tools/gen_engine_tables.py build/host/fe_tables.h
+          cc -O2 -std=gnu99 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -I build/host \
+             -o build/host/wavelet_test tests/wavelet_test.c
+          build/host/wavelet_test build/host | tee build/wavelet_test.log
+          node tools/wavelet_ref.js build/host | tee -a build/wavelet_test.log
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.74
+      - name: Browser emulator (web/emu)
+        run: sh web/emu/build.sh
+      - name: Site (installer + try it in the browser + manual)
+        run: |
+          PKG=$(ls build/*.fwsc | head -1)
+          VER="${{ steps.ver.outputs.release }}"; [ -n "$VER" ] || VER="dev-$(git rev-parse --short HEAD)"
+          python3 web/make_site.py "$PKG" "$VER" build/site
+          mkdir -p build/site/webapp/try build/site/manual
+          cp -r build/emu/. build/site/webapp/try/
+          cp docs/manual.html build/site/manual/index.html
+          cp docs/controls.jpg build/site/manual/
+          ls -R build/site | head -40
+      - name: Baselines (to commit by hand after an update run)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baselines
+          path: |
+            tests/golden.txt
+            tests/cpu_baseline.txt
+            tests/target_budget.txt
+            tests/union_golden.txt
+            build/tests.log
+            build/wavelet_test.log
+          if-no-files-found: ignore
+      - name: Package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: |
+            build/*.fwsc
+            build/felucca.bin
+            build/release-*/
+          if-no-files-found: ignore
+      - name: Site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/site
+  pages:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

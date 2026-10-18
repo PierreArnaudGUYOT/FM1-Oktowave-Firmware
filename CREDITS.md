@@ -1,3 +1,8 @@
+# OKTOWAVE
+
+OKTOWAVE adds the WAVELET engine (Pierre Arnaud GUYOT, OktoPierre) to Felucca; everything else below is
+Felucca's and its authors'. Wavelet filter coefficients: PyWavelets (MIT).
+
 # Credits
 
 Felucca is Leo Kuroshita's ([@kurogedelic](https://github.com/kurogedelic), [Hügelton Instruments](https://hugelton.com)). It uses and

@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OKTOWAVE manual</title>
+<meta name="description" content="OKTOWAVE: the Wavelet Synthesizer's engine on the M-VAVE FM-1, as a Felucca firmware. Install, play, the WAVELET engine's parameters, the presets.">
+<style>
+  :root { --bg: #fbfaf7; --fg: #1d1c1a; --dim: #6b675f; --line: #d9d4c8; --card: #f1eee6; --acc: #b5451b; --code: #ece8de; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #16171a; --fg: #ecebe6; --dim: #a39f95; --line: #3a3c42; --card: #202227; --acc: #f09a6c; --code: #26282e; } }
+  :root[data-theme="dark"] { --bg: #16171a; --fg: #ecebe6; --dim: #a39f95; --line: #3a3c42; --card: #202227; --acc: #f09a6c; --code: #26282e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; letter-spacing: .02em; }
+  h1 small { font-size: 1rem; color: var(--dim); font-weight: 400; margin-left: 8px; }
+  h2 { font-size: 1.35rem; margin: 40px 0 10px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+  h3 { font-size: 1.05rem; margin: 24px 0 6px; }
+  p, li { max-width: 72ch; }
+  a { color: var(--acc); }
+  code, kbd { background: var(--code); border-radius: 4px; padding: 1px 5px; font-size: .92em; }
+  kbd { border: 1px solid var(--line); font-family: inherit; font-weight: 600; }
+  pre { background: var(--code); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: .9em; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 18px; font-size: .95em; }
+  th, td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th { background: var(--card); }
+  tbody th[colspan] { background: transparent; color: var(--dim); font-weight: 600; padding-top: 14px; }
+  .card { background: var(--card); border-radius: 8px; padding: 12px 16px; margin: 14px 0; }
+  .warn { border-left: 4px solid var(--acc); }
+  nav.toc { columns: 2; column-gap: 24px; font-size: .95em; margin: 14px 0 0; }
+  nav.toc a { display: block; text-decoration: none; padding: 2px 0; }
+  figure { margin: 16px 0; }
+  figure img { max-width: 100%; border-radius: 8px; border: 1px solid var(--line); }
+  figcaption { color: var(--dim); font-size: .9em; }
+  .dim { color: var(--dim); }
+  @media (max-width: 600px) { nav.toc { columns: 1; } body { font-size: 15px; } }
+</style>
+</head>
+<body>
+<main>
+<h1>OKTOWAVE <small>manual · version 0.1 · for the M-VAVE FM-1</small></h1>
+<p>OKTOWAVE is an alternative firmware for the M-VAVE FM-1 pocket synthesizer: Hügelton Instruments'
+<a href="https://github.com/hugelton/Felucca">Felucca</a> 1.6.1 with one more synthesis engine, <b>WAVELET</b>, the
+subtractive engine of the <a href="https://github.com/PierreArnaudGUYOT/Free-Wavelet-Synthesizer-VST">Wavelet
+Synthesizer</a> by Pierre Arnaud GUYOT (OktoPierre), rewritten for the FM-1's processor, with 68 of its presets.
+Everything else is Felucca: four tracks, its fourteen engines, the sequencer, arpeggiator, chords, effects, USB
+audio and MIDI. This manual covers what OKTOWAVE adds; for the rest, Felucca's
+<a href="https://github.com/hugelton/Felucca/wiki/Home">wiki</a> is the reference.</p>
+
+<nav class="toc">
+<a href="#install">1. Install</a>
+<a href="#try">2. Try it in the browser</a>
+<a href="#start">3. Quick start</a>
+<a href="#idea">4. How the WAVELET engine works</a>
+<a href="#params">5. The parameters</a>
+<a href="#mod">6. Envelope, LFO, voices, effects</a>
+<a href="#vst">7. Differences from the Wavelet Synthesizer</a>
+<a href="#presets">8. The presets</a>
+<a href="#tips">9. Sound design tips</a>
+<a href="#build">10. Build and test it yourself</a>
+<a href="#credits">11. Credits and licences</a>
+</nav>
+
+<div class="card warn">
+<p><b>Version 0.1 has not been run on an FM-1 yet.</b> It was built with the official toolchain and tested on
+computers only: Felucca's own test suite (the firmware's code against a simulated FM-1), the engine's standalone
+test against a floating-point reference, and the browser build of the whole firmware. Installing a custom
+firmware is at your own risk. Back up your songs first (the installer offers it), and keep the way back:
+M-VAVE's updater or the installer's <i>Return to official V15</i>. If an install fails and the FM-1 no longer
+starts, recovery needs <a href="https://github.com/kurogedelic/FM-1-transporter">FM-1-transporter</a>.</p>
+</div>
+
+<h2 id="install">1. Install</h2>
+<ol>
+<li>Connect the FM-1 to the computer with a USB cable and switch it on.</li>
+<li>Open the <a href="https://pierrearnaudguyot.github.io/FM1-Oktowave-Firmware/">web installer</a> in Chrome or
+Edge (Web MIDI is needed; Firefox and Safari do not have it).</li>
+<li>Press <b>Install</b> and follow the page. The FM-1 restarts into OKTOWAVE; the menu shows
+<code>OKTOWAVE v0.1</code>.</li>
+</ol>
+<p>From the command line, with Python 3 and <code>pip3 install mido python-rtmidi</code>:
+<code>python3 tools/fm1_install.py oktowave-0.1.fwsc</code> (the package is in the
+<a href="https://github.com/PierreArnaudGUYOT/FM1-Oktowave-Firmware/releases">releases</a>).</p>
+<p>OKTOWAVE is a Felucca package: it installs over Felucca, the official firmware or another custom firmware the
+same way, and Felucca's installer, editor and backup tools work with it. Songs and user presets saved by
+Felucca 1.6 load as they are; a song that used a WAVELET part will not sound right on plain Felucca (the
+engine is not there).</p>
+
+<h2 id="try">2. Try it in the browser</h2>
+<p><a href="https://pierrearnaudguyot.github.io/FM1-Oktowave-Firmware/webapp/try/">The firmware in your browser</a>:
+the same code, compiled to WebAssembly, with the FM-1's screen, buttons, knobs and keys drawn on the page
+(after X0X's and Felucca's browser builds). Click the keys or use the computer keyboard. It keeps its saves in
+the browser. Not there: USB, MIDI and the user sample slots.</p>
+
+<h2 id="start">3. Quick start</h2>
+<figure><img src="controls.jpg" alt="The FM-1's panel with the names of the buttons and knobs used by Felucca"><figcaption>The panel as Felucca names it (from Felucca's documentation).</figcaption></figure>
+<p>At power-on, track 1 plays the WAVELET preset <code>NOISE WASH</code>, track 2 an FM6 pad, track 3 the
+WAVELET lead <code>WAVLT LEAD</code>, track 4 the DRUM kit. The keys play the selected track.</p>
+<ul>
+<li><b>Choose a sound</b>: turn the <kbd>PRESETS</kbd> knob. In the PRESETS page (<kbd>SAVE</kbd>, one tap) the
+<kbd>KNOB 1</kbd> steps through the engines: WAVELET is the first, before ANALOG.</li>
+<li><b>Choose the track</b>: the <kbd>SELECT</kbd> knob.</li>
+<li><b>The four knobs on HOME</b> (<kbd>HOME</kbd>): for a WAVELET sound they are <code>CUT</code> (the
+cutoff), <code>RES</code> (resonance), <code>SPRS</code> (sparsity) and <code>REL</code> (release).</li>
+<li><b>All eight engine parameters</b>: <kbd>EDIT</kbd> opens the page <b>ATOMS</b> (WAVE, WVLT, PHAS or
+WDTH, SPRS); <kbd>EDIT</kbd> again opens <b>SCALE</b> (CUT, RES, FLT, WNDW). Each knob is one parameter.</li>
+<li><b>Envelope, LFO, voices, effects</b>: the <kbd>ENV</kbd>, <kbd>LFO</kbd>, <kbd>EDIT</kbd> (VOICE pages) and
+<kbd>FX</kbd> buttons, as for every Felucca engine (section 6).</li>
+<li><b>Save</b>: <kbd>SAVE</kbd> (USER page) stores the sound in one of 32 user slots; projects keep the four
+tracks, their sounds and patterns.</li>
+</ul>
+<p>Turning WAVE, WVLT, PHAS/WDTH or SPRS rebuilds the sound's wave table: the new sound fades in over about
+12 ms once the build is done (3 to 50 ms, longer with DB20 than with HAAR). Everything else acts at once.</p>
+
+<h2 id="idea">4. How the WAVELET engine works</h2>
+<p>A classic subtractive synth filters an oscillator by frequency. WAVELET filters it by <i>scale</i>. One cycle
+of the source wave (512 samples) is taken apart by a periodic orthogonal <b>discrete wavelet transform</b>
+into 511 <b>atoms</b> grouped in nine <b>bands</b>: band 1 holds one atom as long as the cycle (the
+fundamental), band 2 two atoms half as long (around the second harmonic), band 3 four atoms, and so on to band
+9, 256 atoms of two samples (harmonics 128 to 256). Which atom shapes are used is the <b>wavelet</b>: Haar atoms
+are square steps, Daubechies 2 is rough and short, Daubechies 20 is long and smooth, nearly a sine, with
+symlets and coiflets in between. Every band is turned back into a wave of its own (a <b>layer</b>); the nine
+layers add up to the source again.</p>
+<p>A voice reads the nine layers at its pitch and adds them with one gain each. The gains come from the
+<b>scale filter</b>: a cutoff in bands, a slope in dB per band, a resonance peak at the cutoff. Because the
+bands are tied to the cycle, not to a frequency in hertz, the timbre is the same on every key (the VST's key
+tracking at 100 %). <b>SPARSITY</b> keeps only the largest atoms before the layers are made: the wave loses its
+small details first, then its shape, down to one atom. <b>PHASE</b> shifts the source inside the cycle before
+the transform: the transform is not shift-invariant, so the same wave gives other atoms, and another timbre.
+The <b>window</b> (WNDW) cross-fades, inside a raised-cosine bump that covers half the cycle, between the dry
+cycle and the filtered one; SHAPE (the envelope's and the LFO's SHP amounts) moves the bump round the cycle.</p>
+<p>Everything runs in fixed point on the FM-1's two cores' worth of integer arithmetic: the tables are 16-bit,
+the gains 10-bit fractions, the transforms 20-bit samples with 28-bit coefficients. A voice costs about as much
+as an ANALOG voice.</p>
+
+<h2 id="params">5. The parameters</h2>
+<table>
+<thead><tr><th>Page · knob</th><th>Name</th><th>Values</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td>ATOMS · 1</td><td><code>WAVE</code></td><td>SAW SQR PLS TRI SIN NOIS</td><td>The source cycle. NOIS is a loop of 512 random samples: at a pitch it is a buzzy, periodic noise.</td></tr>
+<tr><td>ATOMS · 2</td><td><code>WVLT</code></td><td>HAAR DB2 DB4 DB8 SYM8 COIF3 DB20</td><td>The wavelet: the atoms' shape. HAAR = steps (chip-like, bright); DB4 (the default) and DB8 = the all-rounders; SYM8, COIF3 = smoother, more symmetric; DB20 = nearly sines (the filter then works almost like a harmonic filter).</td></tr>
+<tr><td>ATOMS · 3</td><td><code>PHAS</code></td><td>0 .. 100 %</td><td>The source's phase: where the cycle starts, in 128ths of a cycle. 0 is the Wavelet Synthesizer's sound; other values give other atoms, often a brighter or hollower version of the same wave. Hear it best with HAAR or DB2.</td></tr>
+<tr><td>ATOMS · 3</td><td><code>WDTH</code></td><td>0 .. 100 %</td><td>On PLS and TRI the knob is the pulse width / the triangle's rising part, 2 to 98 % of the cycle (50 % = square / symmetric triangle). These two waves have no phase knob.</td></tr>
+<tr><td>ATOMS · 4</td><td><code>SPRS</code></td><td>0 .. 100 %</td><td>Sparsity: 0 keeps every atom; the knob throws away the smallest ones, more and more (K = N<sup>1 − s</sup> atoms of the N there are), down to a single atom at 100 %. Thins and simplifies the wave; with NOIS it makes pitched, glassy textures.</td></tr>
+<tr><td>SCALE · 1</td><td><code>CUT</code></td><td>0 .. 127</td><td>The cutoff, in bands: 127 is band 12, fully open; 64 is band 6 (harmonics 16 to 32); 0 is below the fundamental. The envelope's and LFO's FLT amounts move it by up to ±12 bands.</td></tr>
+<tr><td>SCALE · 2</td><td><code>RES</code></td><td>0 .. 100 %</td><td>Resonance: a boost of up to 24 dB of the band at the cutoff (and a little of its neighbours).</td></tr>
+<tr><td>SCALE · 3</td><td><code>FLT</code></td><td>LP12 .. LP96, HP12 .. HP96, BP12 .. BP96</td><td>The filter's type and slope: low-pass, high-pass or band-pass, 12 18 24 36 48 or 96 dB per band (24 = the VST's default). The slope is per band, that is per octave of atoms: LP24 is gentle, LP96 is a wall.</td></tr>
+<tr><td>SCALE · 4</td><td><code>WNDW</code></td><td>0 .. 100 %</td><td>The window's depth: 0 = the filtered sound everywhere; 100 % = the dry cycle outside the window and the filtered one inside it. In between, a mix. The window is half a cycle wide; its place is SHAPE (section 6).</td></tr>
+</tbody>
+</table>
+<p>The values 0 .. 127 of the knobs are what Felucca's editor and the SysEx protocol see (engine values
+E0 .. E7); the screen shows them as above.</p>
+
+<h2 id="mod">6. Envelope, LFO, voices, effects</h2>
+<p>These are Felucca's, the same for every engine; what matters for WAVELET:</p>
+<ul>
+<li><kbd>ENV</kbd>: the ADSR of the voice's level. Its second page, <b>ENV DEST</b>: <code>FLT</code> moves
+the cutoff with the envelope (−64 .. +63 = −12 .. +12 bands: the classic filter sweep of a pluck or a brass
+sound); <code>SHP</code> moves the window's place with the envelope; <code>PIT</code> the pitch.</li>
+<li><kbd>LFO</kbd>: rate, wave, phase, fade; <b>LFO DEST</b>: <code>FLT</code> sweeps the cutoff (wobbles,
+auto-wah), <code>SHP</code> sweeps the window round the cycle (a phaser-like motion when WNDW is up),
+<code>PIT</code> vibrato, <code>AMP</code> tremolo. The <b>MOD</b> page's matrix (velocity, aftertouch, random,
+…) reaches the same destinations.</li>
+<li><b>VOICE</b> pages (<kbd>EDIT</kbd>, after the engine pages): POLY / MONO / LEGATO / UNISON, glide, detune,
+pan, spread. UNISON with DETUNE is what the Wavelet Synthesizer's UNISON 2 .. 4 did; the presets that used it
+are marked below.</li>
+<li><kbd>FX</kbd>: the sends to distortion, chorus, delay and reverb, and the track's INSERT. The presets
+carry their drive, chorus, delay and reverb amounts from the VST.</li>
+<li>The scale and chord keys (<kbd>SCL</kbd>), the arpeggiator (<kbd>ARP</kbd>) and the sequencer
+(<kbd>SEQ</kbd>) play a WAVELET track like any other.</li>
+</ul>
+
+<h2 id="vst">7. Differences from the Wavelet Synthesizer</h2>
+<p>The FM-1 has a small integer processor and no floating point, so the engine is a reduced version of engine
+A of the VST / web app (beta 0.6). What it keeps: the source waves, the seven wavelets, the atoms and bands,
+sparsity, the source phase, the scale filter (types, slope, resonance, envelope and LFO to the cutoff), the
+window and its position. What is reduced or left out:</p>
+<table>
+<thead><tr><th>In the VST</th><th>On the FM-1</th></tr></thead>
+<tbody>
+<tr><td>2048-sample cycle, 11 bands, 11 band-limited mip levels per layer</td><td>512-sample cycle, 9 bands (harmonics 1 .. 256; the VST's bands 10 and 11 would be above 10 kHz on any note above 40 Hz). Anti-aliasing is by band: a band whose harmonics would pass Nyquist fades out, one octave coarse, so the top octave of a very high note may alias a little.</td></tr>
+<tr><td>Engine B (additive), A/B MIX, WAVELET MORPH, LFO 2, SOURCE PHASE moved by LFO 2, the sub oscillator, unison inside the voice, the chorus / delay / reverb / limiter of the plug-in</td><td>Not there. Felucca's own LFO, matrix, UNISON voice mode and effects replace what they can. The presets of the VST's "Source Phase" section that needed LFO 2 (the "Shift" sounds) are left out; the static ones are in.</td></tr>
+<tr><td>KEY TRK 0 .. 100 %, VEL AMT, the window's WIDTH, POSITION knob, a separate filter envelope</td><td>Key tracking is 100 %, the window is half a cycle wide and its position is SHAPE (the envelope's / LFO's SHP), the filter envelope is the amp envelope (ENV DEST FLT). Velocity reaches the cutoff through the MOD matrix.</td></tr>
+<tr><td>SLOPE 6 .. 96 dB/band, any value; band-reject</td><td>Six slopes (12 18 24 36 48 96) and three types; the presets took the nearest slope (no preset used band-reject).</td></tr>
+<tr><td>SPARSITY counts atoms down to 10<sup>−9</sup> of the largest</td><td>The 20-bit atoms stop at 2<sup>−18</sup> (−108 dB): with the smoother wavelets the knob's law differs slightly, so a VST preset's SPARSITY value may thin a little more or less here.</td></tr>
+<tr><td>Tables rebuilt in a few milliseconds on a computer</td><td>3 to 50 ms (HAAR .. DB20), in slices inside the audio interrupt, with a 12 ms cross-fade; while the knob keeps turning, the build starts over.</td></tr>
+<tr><td>Double precision</td><td>16-bit tables, 10-bit gains, 20-bit transforms: the engine's test shows the tables within −72 dB of the floating-point reference.</td></tr>
+</tbody>
+</table>
+
+<h2 id="presets">8. The presets</h2>
+<p>68 of the Wavelet Synthesizer's engine-A presets, in the VST's order: OktoPierre's TOP Sounds first (★ with
+his vote of the listening tests), then by category. The names are shortened to the FM-1's ten characters; the
+VST's name is beside each. The sounds that used the VST's unison, sub oscillator, LFO 2 or morph are plainer
+here; UNISON on the VOICE page brings some of it back.</p>
+<table>
+<thead><tr><th>FM-1</th><th>Wavelet Synthesizer</th><th></th></tr></thead>
+<tbody>
+<!-- PRESETS -->
+<tr><th colspan="3">Pad</th></tr>
+<tr><td><code>NOISE WASH</code></td><td>Noise Wash Pad</td><td>★ 9</td></tr>
+<tr><th colspan="3">FX</th></tr>
+<tr><td><code>SIREN SWP</code></td><td>Siren Sweep</td><td>★ 9</td></tr>
+<tr><th colspan="3">Lead</th></tr>
+<tr><td><code>WAVLT LEAD</code></td><td>Wavelet Lead</td><td></td></tr>
+<tr><th colspan="3">Brass & Wind</th></tr>
+<tr><td><code>WAVE BRASS</code></td><td>Wave Brass</td><td>★ 8</td></tr>
+<tr><th colspan="3">FX</th></tr>
+<tr><td><code>WAVE RISER</code></td><td>Wave Riser</td><td>★ 9</td></tr>
+<tr><th colspan="3">Pad</th></tr>
+<tr><td><code>WARM PAD</code></td><td>Warm Pad</td><td></td></tr>
+<tr><th colspan="3">Lead</th></tr>
+<tr><td><code>ATTACK LD</code></td><td>Wave Attack Lead</td><td>★ 9</td></tr>
+<tr><td><code>DUB ECHO</code></td><td>Dub Echo Lead</td><td></td></tr>
+<tr><td><code>PULSE LEAD</code></td><td>Wave Pulse Lead</td><td>★ 9</td></tr>
+<tr><th colspan="3">Strings</th></tr>
+<tr><td><code>CELLOS</code></td><td>Cello Section</td><td>★ 8</td></tr>
+<tr><td><code>SPICCATO</code></td><td>Spiccato Strings</td><td>★ 8</td></tr>
+<tr><td><code>SHIMMER ST</code></td><td>Shimmering Strings</td><td>★ 8</td></tr>
+<tr><th colspan="3">FX</th></tr>
+<tr><td><code>WAVE ROBOT</code></td><td>Wave Robot</td><td>★ 10</td></tr>
+<tr><td><code>LASER SWP</code></td><td>Laser Sweep</td><td></td></tr>
+<tr><th colspan="3">Bass</th></tr>
+<tr><td><code>WOBBLE BS</code></td><td>Wave Wobble Bass</td><td>★ 7</td></tr>
+<tr><td><code>REESE SUB</code></td><td>Reese Sub</td><td></td></tr>
+<tr><td><code>ACID SUB</code></td><td>Acid Sub</td><td></td></tr>
+<tr><td><code>LADDER BS</code></td><td>Ladder Bass</td><td></td></tr>
+<tr><th colspan="3">Lead</th></tr>
+<tr><td><code>S/H LEAD</code></td><td>Wave S/H Lead</td><td>★ 7</td></tr>
+<tr><td><code>CHORUS SQR</code></td><td>Chorus Square Lead</td><td></td></tr>
+<tr><td><code>SAW LEAD</code></td><td>Saw Lead</td><td></td></tr>
+<tr><td><code>WHISTLE</code></td><td>Whistle Lead</td><td></td></tr>
+<tr><th colspan="3">Keys</th></tr>
+<tr><td><code>CLEAN KEYS</code></td><td>Clean Keys</td><td></td></tr>
+<tr><td><code>TINE PIANO</code></td><td>Tine Piano</td><td></td></tr>
+<tr><td><code>CLAVI</code></td><td>Clavi</td><td></td></tr>
+<tr><td><code>LOFI PIANO</code></td><td>Lo-Fi Piano</td><td></td></tr>
+<tr><th colspan="3">Pad</th></tr>
+<tr><td><code>CHORUS PAD</code></td><td>Poly Chorus Pad</td><td></td></tr>
+<tr><td><code>BRASS PAD</code></td><td>Analog Brass Pad</td><td>★ 7</td></tr>
+<tr><td><code>MORPH PAD</code></td><td>Wave Morph Pad</td><td>★ 7</td></tr>
+<tr><td><code>GLASS PAD</code></td><td>Glass Pad</td><td></td></tr>
+<tr><td><code>SWEEP PAD</code></td><td>Sweep Pad</td><td>★ 7</td></tr>
+<tr><td><code>ANALOG PAD</code></td><td>Analog Pad</td><td></td></tr>
+<tr><th colspan="3">Strings</th></tr>
+<tr><td><code>STRING MCH</code></td><td>String Machine</td><td></td></tr>
+<tr><td><code>ENSEMBLE</code></td><td>Ensemble Strings</td><td>★ 7</td></tr>
+<tr><td><code>TREMOLO ST</code></td><td>Wave Tremolo Strings</td><td>★ 7</td></tr>
+<tr><td><code>SOLINA</code></td><td>Solina Cellos</td><td></td></tr>
+<tr><td><code>PIZZICATO</code></td><td>Pizzicato</td><td></td></tr>
+<tr><td><code>SLOW STR</code></td><td>Slow Strings</td><td></td></tr>
+<tr><th colspan="3">Brass & Wind</th></tr>
+<tr><td><code>FR HORN</code></td><td>French Horn</td><td>★ 7</td></tr>
+<tr><td><code>NOISE BRS</code></td><td>Noise Brass</td><td></td></tr>
+<tr><td><code>BRASS STAB</code></td><td>Brass Section Stab</td><td>★ 7</td></tr>
+<tr><th colspan="3">Pluck</th></tr>
+<tr><td><code>STEEL PLCK</code></td><td>Steel Pluck</td><td>★ 7</td></tr>
+<tr><td><code>HARP</code></td><td>Harp</td><td></td></tr>
+<tr><td><code>SYN PLUCK</code></td><td>Synth Pluck</td><td></td></tr>
+<tr><th colspan="3">FX</th></tr>
+<tr><td><code>UFO</code></td><td>UFO</td><td>★ 7</td></tr>
+<tr><td><code>ATOM SCAN</code></td><td>Wave Atom Scanner</td><td>★ 7</td></tr>
+<tr><td><code>WIND</code></td><td>Wind</td><td></td></tr>
+<tr><td><code>ALARM</code></td><td>Alarm</td><td></td></tr>
+<tr><th colspan="3">Drums & Perc</th></tr>
+<tr><td><code>NOISE SNR</code></td><td>Noise Snare</td><td></td></tr>
+<tr><td><code>CLOSED HAT</code></td><td>Closed Hat</td><td></td></tr>
+<tr><td><code>OPEN HAT</code></td><td>Open Hat</td><td></td></tr>
+<tr><td><code>SYNTH TOM</code></td><td>Synth Tom</td><td></td></tr>
+<tr><th colspan="3">Init</th></tr>
+<tr><td><code>INIT</code></td><td>Init</td><td></td></tr>
+<tr><th colspan="3">Source Phase</th></tr>
+<tr><td><code>WINDOW LD</code></td><td>Window Phase Lead</td><td></td></tr>
+<tr><td><code>CLARINET</code></td><td>Phase Clarinet</td><td></td></tr>
+<tr><td><code>PH WOBBLE</code></td><td>Phase Wobble Bass</td><td></td></tr>
+<tr><td><code>PIPE PHASE</code></td><td>Pipe Phase</td><td></td></tr>
+<tr><td><code>DRIFT PAD</code></td><td>Phase Drift Pad</td><td></td></tr>
+<tr><td><code>DAWN PHASE</code></td><td>Dawn Phase</td><td></td></tr>
+<tr><td><code>NOISE PH</code></td><td>Noise Phase Pad</td><td></td></tr>
+<tr><td><code>PH GLASS</code></td><td>Phase Glass Pad</td><td></td></tr>
+<tr><td><code>DARK PHASE</code></td><td>Dark Phase Pad</td><td></td></tr>
+<tr><td><code>PH ENSMBLE</code></td><td>Phase Ensemble</td><td></td></tr>
+<tr><td><code>PH TREMOLO</code></td><td>Phase Tremolo Strings</td><td></td></tr>
+<tr><td><code>SHIFT HORN</code></td><td>Shifted Horns</td><td></td></tr>
+<tr><td><code>PHASE STAB</code></td><td>Phase Stab</td><td></td></tr>
+<tr><td><code>PH SCANNER</code></td><td>Phase Scanner</td><td></td></tr>
+<tr><td><code>PH GLITCH</code></td><td>Phase Glitch</td><td></td></tr>
+<!-- /PRESETS -->
+</tbody>
+</table>
+
+<h2 id="tips">9. Sound design tips</h2>
+<ul>
+<li><b>Start from the wavelet.</b> The same saw through HAAR, DB4 and DB20 is three instruments: steps, a
+textured saw, a smooth one. Then CUT and RES.</li>
+<li><b>Sparsity is a second filter.</b> Low values clean the wave (it drops the tiny atoms); 40 .. 70 % turns
+any wave into a lighter, hollow version of itself; high values leave a few atoms: a pitched click, a formant.
+With NOIS, sparsity + a resonant band-pass = glassy, bell-like noises.</li>
+<li><b>Phase is cheap variation.</b> Two tracks with the same preset and different PHAS values do not sound
+alike: good for a two-layer pad.</li>
+<li><b>The window as a phaser.</b> WNDW 100 %, LFO DEST SHP at half, a slow LFO: the filtered part of the
+cycle sweeps round, a slow phase-like motion that follows the pitch.</li>
+<li><b>Brass and plucks</b>: ENV DEST FLT positive with a quick decay; <b>pads</b>: slow attack, DB8 or
+SYM8, chorus; <b>basses</b>: MONO, HAAR or DB2, LP24 with a little RES.</li>
+<li><b>The filter is in bands, not hertz</b>: a cutoff of 64 lets harmonics 1 .. ~24 through on every key.
+For a bass with a fixed-frequency feel, play it low with a low CUT.</li>
+</ul>
+
+<h2 id="build">10. Build and test it yourself</h2>
+<p>The source is on <a href="https://github.com/PierreArnaudGUYOT/FM1-Oktowave-Firmware">GitHub</a>. The firmware
+builds like Felucca (<code>BUILDING.md</code>: JieLi's pi32v2 clang 4.0.1, Linux x86-64; three files of the
+Apache-2.0 AC79 SDK; Python with Pillow and fontTools). The repository's GitHub Actions workflow does all of it
+on a Linux runner and publishes the package, the test results, the browser build and this manual.</p>
+<p>The engine alone needs only a C compiler and Node.js:</p>
+<pre>python3 firmware/engines/tools/gen_engine_tables.py build/host/fe_tables.h
+cc -O2 -std=gnu99 -I build/host -o build/host/wavelet_test tests/wavelet_test.c
+build/host/wavelet_test build/host     # every wave x wavelet, the presets (writes preset_NN.wav), the cross-fade, the anti-aliasing
+node tools/wavelet_ref.js build/host   # the fixed-point tables against the floating-point reference</pre>
+
+<h2 id="credits">11. Credits and licences</h2>
+<ul>
+<li><b>Felucca</b> by Leo Kuroshita (@kurogedelic), Hügelton Instruments, GPL-3.0-only; its ANALOG, LOFI, TRIO,
+WHEEL and NOISE engines (Felucca-Engines) MIT; its ports of DaisySP and Rings (MIT) and msfa (Apache-2.0); the
+Hügelton Sample Pack (CC0 1.0); Fukiai icons (MIT); the Inter Tight and DotGothic16 fonts (SIL OFL 1.1). The
+browser build follows Charles Vestal's X0X. See <code>LICENSING.md</code> and <code>CREDITS.md</code>.</li>
+<li><b>WAVELET engine, presets, tools and this manual</b>: Copyright © 2026 Pierre Arnaud GUYOT (OktoPierre),
+GPL-3.0-only (the firmware as a whole is GPL-3.0-only). It is a port of engine A of the Wavelet Synthesizer
+(GPL-3.0-or-later, same author). Wavelet filter coefficients computed with PyWavelets (MIT).</li>
+<li>The package carries three files of JieLi's AC79 SDK (Apache-2.0), as Felucca's does.</li>
+<li>M-VAVE and FM-1 are trademarks of their respective owners. OKTOWAVE is not affiliated with or endorsed by
+M-VAVE, nor by Hügelton Instruments.</li>
+</ul>
+<p class="dim">OKTOWAVE manual, version 0.1, 2026-10-18.</p>
+</main>
+</body>
+</html>

@@ -7,6 +7,17 @@ texts are in `LICENSES/`.
 
 Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
 
+## OKTOWAVE (this fork)
+
+OKTOWAVE is Felucca with one more engine. Its own files are GPL-3.0-only too, Copyright (C) 2026
+Pierre Arnaud GUYOT (OktoPierre): `firmware/src/eng_wavelet.c`, `firmware/src/wavelet_tick.c`,
+`firmware/src/wavelet_presets.h` and `firmware/src/wavelet_tables.h` (generated), `tools/gen_wavelet_tables.py`,
+`tools/gen_wavelet_presets.js`, `tools/wavelet_ref.js`, `tools/wavelet_presets_src.json`, `tests/wavelet_test.c`,
+`docs/manual.html` and `.github/workflows/build.yml`. The engine is a port of engine A of the Wavelet Synthesizer
+(<https://github.com/PierreArnaudGUYOT/Free-Wavelet-Synthesizer-VST>, GPL-3.0-or-later, the same author), whose
+presets `tools/wavelet_presets_src.json` carries. `tools/wavelets.json` holds wavelet filter coefficients computed
+with PyWavelets (MIT, <https://github.com/PyWavelets/pywt>): numbers, not code.
+
 ## What is GPL-3.0-only
 
 Every file in this tree that carries an `SPDX-License-Identifier: GPL-3.0-only` header:
