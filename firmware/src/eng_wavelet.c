@@ -283,7 +283,7 @@ static void wav_layer_out(wav_scratch_t *s, const int32_t *lay)
                 peak = a;
         }
         if (peak > 0)
-            recip = (int64_t)(((uint64_t)16384u << 32) / (uint64_t)peak);
+            recip = (((int64_t)16384 << 32) / (int64_t)peak);   /* (signed: the FM-1's runtime has __divdi3, not __udivdi3) */
     }
     for (i = 0; i < WAV_N; i++) {
         int32_t v = recip ? (int32_t)(((int64_t)lay[i] * recip + ((int64_t)1 << 31)) >> 32) : wav_sat16((lay[i] + 32) >> 6);
