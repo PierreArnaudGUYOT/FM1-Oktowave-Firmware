@@ -251,7 +251,7 @@ static uint8_t wav_done(wav_scratch_t *s)               /* the last layer is in:
 }
 
 /* one slice of the build: at most `budget` multiply-adds (a sort counts as the whole budget) */
-static void wav_build_step(wav_scratch_t *s, int32_t budget)
+static __attribute__((noinline)) void wav_build_step(wav_scratch_t *s, int32_t budget)
 {
     const int32_t *h = WAV_H[(uint32_t)s->snap[1] % WAV_NW], *g = WAV_G[(uint32_t)s->snap[1] % WAV_NW];
     uint32_t L = WAV_L[(uint32_t)s->snap[1] % WAV_NW], n, i;

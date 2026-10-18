@@ -32,7 +32,7 @@ static void wav_copy_table(uint32_t p, wav_part_t *ps, const wav_scratch_t *s)
 }
 
 /* once per audio block, on core 0 before the parts render (fx.c mix_block): the builds and the switches */
-static void wav_tick(void)
+static __attribute__((noinline)) void wav_tick(void)   /* (not inlined: its loops stay out of the audio ISR's own cost) */
 {
     wav_scratch_t *s = &wav_scr;
     uint32_t p;

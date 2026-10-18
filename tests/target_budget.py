@@ -14,7 +14,7 @@ import os
 import re
 import sys
 
-FUNCS = ["wavelet_render", "wav_gains", "wav_build_step",   # WAVELET (eng_wavelet.c): the voice, its gains, the build slice
+FUNCS = ["wavelet_render", "wav_build_step", "wav_tick",   # WAVELET (eng_wavelet.c): the voice, the build slice, its scheduler (wav_gains is inlined into the voice)
          "analog_render", "digital_render", "digital_render_legacy", "digital_render_custom", "phase_render", "phase_render_f", "lofi_render", "sample_render", "formant_render",
          "trio_render", "trio_pass", "wheel_render", "wheel_block",
          "grain_render", "grain_block", "phys_render", "drum_render", "noise_render", "fm6_render", "fm6_op_run", "fm6_op_fb", "px_modal_block", "px_modal_run", "px_memb_block",
