@@ -6,7 +6,7 @@
 [Felucca](https://github.com/hugelton/Felucca) 1.6.1 (four tracks, 14 synthesis engines, sequencer, arpeggiator,
 effects, USB audio and MIDI) plus one more engine, **WAVELET**: engine A (subtractive) of the
 [Wavelet Synthesizer](https://github.com/PierreArnaudGUYOT/Free-Wavelet-Synthesizer-VST) by Pierre Arnaud GUYOT
-(OktoPierre), rewritten in fixed point for the FM-1's processor, with 68 of its presets.
+(OktoPierre), rewritten in fixed point for the FM-1's processor, with 69 of its presets.
 
 One cycle of a source wave is split by a discrete wavelet transform (Haar, Daubechies 2 to 20, a symlet, a coiflet)
 into nine bands of atoms, the smallest atoms can be dropped (SPARSITY), and the bands are played through a scale

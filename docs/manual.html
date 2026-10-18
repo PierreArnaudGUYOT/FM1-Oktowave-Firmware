@@ -42,7 +42,7 @@
 <p>OKTOWAVE is an alternative firmware for the M-VAVE FM-1 pocket synthesizer: Hügelton Instruments'
 <a href="https://github.com/hugelton/Felucca">Felucca</a> 1.6.1 with one more synthesis engine, <b>WAVELET</b>, the
 subtractive engine of the <a href="https://github.com/PierreArnaudGUYOT/Free-Wavelet-Synthesizer-VST">Wavelet
-Synthesizer</a> by Pierre Arnaud GUYOT (OktoPierre), rewritten for the FM-1's processor, with 68 of its presets.
+Synthesizer</a> by Pierre Arnaud GUYOT (OktoPierre), rewritten for the FM-1's processor, with 69 of its presets.
 Everything else is Felucca: four tracks, its fourteen engines, the sequencer, arpeggiator, chords, effects, USB
 audio and MIDI. This manual covers what OKTOWAVE adds; for the rest, Felucca's
 <a href="https://github.com/hugelton/Felucca/wiki/Home">wiki</a> is the reference.</p>
@@ -87,15 +87,20 @@ Felucca 1.6 load as they are; a song that used a WAVELET part will not sound rig
 engine is not there).</p>
 
 <h2 id="try">2. Try it in the browser</h2>
-<p><a href="https://pierrearnaudguyot.github.io/FM1-Oktowave-Firmware/webapp/try/">The firmware in your browser</a>:
+<p>The page opens on a window with four choices: <b>Run the demo</b> (the four tracks play and the lead walks through the sounds,
+the TOP Sounds first), <b>Play the synth</b> (switch the FM-1 on and play), <b>Install on an FM-1</b> (the installer) and <b>User manual</b>.
+<a href="https://pierrearnaudguyot.github.io/FM1-Oktowave-Firmware/webapp/try/">The firmware in your browser</a>:
 the same code, compiled to WebAssembly, with the FM-1's screen, buttons, knobs and keys drawn on the page
 (after X0X's and Felucca's browser builds). Click the keys or use the computer keyboard. It keeps its saves in
 the browser. Not there: USB, MIDI and the user sample slots.</p>
 
 <h2 id="start">3. Quick start</h2>
 <figure><img src="controls.jpg" alt="The FM-1's panel with the names of the buttons and knobs used by Felucca"><figcaption>The panel as Felucca names it (from Felucca's documentation).</figcaption></figure>
-<p>At power-on, track 1 plays the WAVELET preset <code>NOISE WASH</code>, track 2 an FM6 pad, track 3 the
-WAVELET lead <code>WAVLT LEAD</code>, track 4 the DRUM kit. The keys play the selected track.</p>
+<p>At power-on the four tracks are ready to play together, all in C minor: track 1 the bass <code>REESE SUB</code> with the pattern
+<code>OKTOBASS</code>, track 2 the pad <code>WARM PAD</code> (a TOP Sound) with <code>OKTOCHRD</code>, track 3 the lead
+<code>PULSE LEAD</code> (a TOP Sound) with <code>OKTOLEAD</code>, track 4 the DRUM kit with <code>BEAT</code>. Press <kbd>PLAY</kbd> to hear
+them; <kbd>PLAY</kbd> again stops. The keys play the selected track, so you can play over the groove or change any sound while it runs.
+The new patterns are in SAVE &rsaquo; PHRASES for any track.</p>
 <ul>
 <li><b>Choose a sound</b>: turn the <kbd>PRESETS</kbd> knob. In the PRESETS page (<kbd>SAVE</kbd>, one tap) the
 <kbd>KNOB 1</kbd> steps through the engines: WAVELET is the first, before ANALOG.</li>
@@ -189,35 +194,29 @@ window and its position. What is reduced or left out:</p>
 </table>
 
 <h2 id="presets">8. The presets</h2>
-<p>68 of the Wavelet Synthesizer's engine-A presets, in the VST's order: OktoPierre's TOP Sounds first (★ with
-his vote of the listening tests), then by category. The names are shortened to the FM-1's ten characters; the
+<p>69 of the Wavelet Synthesizer's presets (beta 0.7), engine A only: first the 15 of OktoPierre's 22 TOP Sounds that this engine can play
+(the other seven use the VST's additive engine B, which the FM-1 does not have), then the rest by category (★ = his vote of the
+listening tests). Silk Strings is an A/B preset; here it is its A part. The names are shortened to the FM-1's ten characters; the
 VST's name is beside each. The sounds that used the VST's unison, sub oscillator, LFO 2 or morph are plainer
 here; UNISON on the VOICE page brings some of it back.</p>
 <table>
 <thead><tr><th>FM-1</th><th>Wavelet Synthesizer</th><th></th></tr></thead>
 <tbody>
 <!-- PRESETS -->
-<tr><th colspan="3">Pad</th></tr>
+<tr><th colspan="3">TOP Sounds (the Wavelet Synthesizer favourites, best first)</th></tr>
 <tr><td><code>NOISE WASH</code></td><td>Noise Wash Pad</td><td>★ 9</td></tr>
-<tr><th colspan="3">FX</th></tr>
 <tr><td><code>SIREN SWP</code></td><td>Siren Sweep</td><td>★ 9</td></tr>
-<tr><th colspan="3">Lead</th></tr>
 <tr><td><code>WAVLT LEAD</code></td><td>Wavelet Lead</td><td></td></tr>
-<tr><th colspan="3">Brass & Wind</th></tr>
 <tr><td><code>WAVE BRASS</code></td><td>Wave Brass</td><td>★ 8</td></tr>
-<tr><th colspan="3">FX</th></tr>
 <tr><td><code>WAVE RISER</code></td><td>Wave Riser</td><td>★ 9</td></tr>
-<tr><th colspan="3">Pad</th></tr>
 <tr><td><code>WARM PAD</code></td><td>Warm Pad</td><td></td></tr>
-<tr><th colspan="3">Lead</th></tr>
 <tr><td><code>ATTACK LD</code></td><td>Wave Attack Lead</td><td>★ 9</td></tr>
 <tr><td><code>DUB ECHO</code></td><td>Dub Echo Lead</td><td></td></tr>
 <tr><td><code>PULSE LEAD</code></td><td>Wave Pulse Lead</td><td>★ 9</td></tr>
-<tr><th colspan="3">Strings</th></tr>
 <tr><td><code>CELLOS</code></td><td>Cello Section</td><td>★ 8</td></tr>
+<tr><td><code>SILK STR</code></td><td>Silk Strings (its A part)</td><td>★ 8</td></tr>
 <tr><td><code>SPICCATO</code></td><td>Spiccato Strings</td><td>★ 8</td></tr>
 <tr><td><code>SHIMMER ST</code></td><td>Shimmering Strings</td><td>★ 8</td></tr>
-<tr><th colspan="3">FX</th></tr>
 <tr><td><code>WAVE ROBOT</code></td><td>Wave Robot</td><td>★ 10</td></tr>
 <tr><td><code>LASER SWP</code></td><td>Laser Sweep</td><td></td></tr>
 <tr><th colspan="3">Bass</th></tr>

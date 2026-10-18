@@ -188,12 +188,21 @@ static const struct {
      * now that the arpeggiator is the track's and a preset no longer switches it on */
     {"ARP", {48, 51, 55, 60, 63, 67, 72, 75, 48, 51, 55, 60, 63, 67, 72, 75},       /* 13 */
      {1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0}},
+    /* OKTOWAVE: a C minor groove for the four power-on tracks (bass, chords, lead; the drums are BEAT) */
+    {"OKTOBASS", {36, 0, 36, 0, 0, 39, 0, 36, 0, 36, 0, 43, 0, 41, 0, 38},         /* 14 syncopated bass */
+     {1, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0}},
+    {"OKTOLEAD", {72, 0, 75, 0, 79, 0, 77, 75, 0, 74, 0, 72, 0, 70, 0, 67},         /* 15 */
+     {1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0}},
+    {"OKTOCHRD", {60, 0, 0, 0, 0, 0, 0, 0, 56, 0, 0, 0, 58, 0, 0, 0},               /* 16 held chord roots */
+     {0, T_, T_, T_, T_, T_, T_, T_, 0, T_, T_, T_, 0, T_, T_, T_}},
 };
 #undef T_
 #define NPATTERNS (sizeof PATTERNS / sizeof PATTERNS[0])
 
 /* the parts at power-on (engine, preset, PATTERNS[n - 1] in the sequencer, 0 = empty: all are): bass, pad, lead, drums */
-static const uint8_t TRK_DEF[NPART][3] = {{ENGI_WAVELET, 0, 0}, {ENGI_FM6, 4, 0}, {ENGI_WAVELET, 2, 0}, {ENGI_DRUM, 0, 0}}; /* OKTOWAVE: WAVELET
-                                                                       * NOISE WASH, FM6 PAD, WAVELET WAVLT LEAD, DRUM KIT; Felucca: ANALOG ACID,
+static const uint8_t TRK_DEF[NPART][3] = {{ENGI_WAVELET, WP_REESE_SUB, 14}, {ENGI_WAVELET, WP_WARM_PAD, 16},
+                                          {ENGI_WAVELET, WP_PULSE_LEAD, 15}, {ENGI_DRUM, 0, 12}}; /* OKTOWAVE: WAVELET
+                                                                       * REESE SUB + OKTOBASS, WARM PAD + OKTOCHRD, PULSE LEAD + OKTOLEAD, DRUM KIT + BEAT
+                                                                       * (all in C minor, press PLAY); Felucca: ANALOG ACID,
                                                                        * FM6 PAD (was DIGITAL PAD), LOFI PULSE LD, DRUM KIT */
 static uint32_t trk_def_engine(uint32_t i) { return TRK_DEF[i % NPART][0]; }

@@ -63,6 +63,18 @@ a { color: inherit; }
 .start button { font: inherit; font-size: 18px; padding: 12px 28px; background: #fff; color: #000; border: 0; cursor: pointer; }
 .start button:disabled { opacity: .4; cursor: progress; }
 .start p { margin: 0; max-width: 32em; text-align: center; color: #fff; }
+.welcome { background: rgba(10, 10, 12, .88); }
+.welcome h2 { margin: 0; color: #fff; font-size: 26px; letter-spacing: .06em; }
+.welcome .sub { margin: 0; max-width: 28em; text-align: center; color: #cfcfd4; font-size: 14px; }
+.welcome .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: min(26em, 90%); }
+.welcome .choices > * { font: inherit; font-size: 16px; padding: 12px 10px; background: #fff; color: #000; border: 0; cursor: pointer;
+                        text-align: center; text-decoration: none; display: block; border-radius: 4px; }
+.welcome .choices > *:disabled { opacity: .4; cursor: progress; }
+.welcome .choices .main { background: #f5b342; }
+.welcome .choices small { display: block; font-size: 11px; opacity: .7; margin-top: 2px; }
+.welcome .note { font-size: 12px; color: #a8a8ae; max-width: 30em; text-align: center; }
+.demobar { margin: 12px 0 0; text-align: center; color: var(--dim); font-size: 13px; }
+.demobar button { font: inherit; font-size: 12px; margin-left: 8px; }
 .keys, footer { margin: 16px 0 0; color: var(--dim); text-align: center; }
 .keys span { white-space: nowrap; margin: 0 8px; }
 .keys select { font: inherit; font-size: 12px; }
@@ -77,8 +89,21 @@ footer small { font-size: 11px; opacity: .8; }
 <div class="device" id="device">
   <svg id="panel" viewBox="0 0 1000 624" aria-hidden="true"></svg>
   <canvas id="screen" width="240" height="240" role="img" aria-label="The screen"></canvas>
-  <div class="start" id="start"><button id="go" type="button">Switch on</button><p id="status" hidden></p></div>
+  <div class="start welcome" id="start">
+    <h2>OKTOWAVE</h2>
+    <p class="sub">The Wavelet Synthesizer's engine on the M-VAVE FM-1, as a firmware: the same code the FM-1 runs, in your browser.</p>
+    <div class="choices">
+      <button id="demo" class="main" type="button">Run the demo<small>4 tracks play, sounds change</small></button>
+      <button id="go" type="button">Play the synth<small>keys, knobs, MIDI</small></button>
+      <a id="dl" href="../installer/">Install on an FM-1<small>download the firmware</small></a>
+      <a id="man" href="../../manual/" target="_blank" rel="noopener">User manual<small>opens in a new tab</small></a>
+    </div>
+    <p id="status" hidden></p>
+    <p class="note">Browsers allow sound only after a click: each choice is that click. Version 0.1 has not been tried on a real FM-1 yet.</p>
+  </div>
 </div>
+
+<p class="demobar" id="demobar" hidden><span id="demotext"></span><button id="demostop" type="button">Stop the demo</button></p>
 
 <p class="keys">
   <span><kbd>Z</kbd>–<kbd>'</kbd> <kbd>Q</kbd>–<kbd>O</kbd> keys</span>
@@ -486,10 +511,10 @@ async function midiOn() {
 // ------------------------------------------------------------------ switching on
 const status = document.getElementById("status");
 const say = (t) => { status.textContent = t; status.hidden = !t; };
-async function switchOn() {
-  const go = document.getElementById("go");
-  go.disabled = true;
-  go.textContent = "Starting…";
+async function switchOn(demo) {
+  const go = document.getElementById("go"), dbtn = document.getElementById("demo");
+  go.disabled = dbtn.disabled = true;
+  go.firstChild.textContent = "Starting…";
   try {
     const ac = new AudioContext({ sampleRate: 44100, latencyHint: "interactive" });
     const [wasm] = await Promise.all([
@@ -516,20 +541,53 @@ async function switchOn() {
     });
     await ac.resume();
     document.getElementById("start").hidden = true;
-    go.textContent = "On";
+    go.firstChild.textContent = "On";
     if (ac.sampleRate !== 44100) console.warn(`Felucca: the browser plays at ${ac.sampleRate} Hz, the pitch is off by ${(1200 * Math.log2(ac.sampleRate / 44100)).toFixed(0)} cents.`);
     syncButtons();
     syncKeys();
     send({ type: "visible", on: !document.hidden });
     midiOn();
+    if (demo === true) startDemo();
   } catch (err) {
     node = null;
-    go.disabled = false;
-    go.textContent = "Switch on";
+    go.disabled = dbtn.disabled = false;
+    go.firstChild.textContent = "Play the synth";
     say("Could not start: " + (err && err.message || err) + ". A current Chrome, Edge, Firefox or Safari should work.");
   }
 }
-document.getElementById("go").addEventListener("click", switchOn);
+// ------------------------------------------------------------------ the demo
+// The four power-on tracks (bass, chords, lead, drums: C minor patterns) play when PLAY is pressed; the demo presses it,
+// selects the lead track and turns the PRESETS knob every few seconds: the lead walks through the sounds (the TOP
+// Sounds come first in the list), the other tracks keep the groove.
+let demoTimer = 0, demoCount = 0;
+const DEMO_STEP_MS = 14000;
+function pressPlay() {
+  send({ type: "buttons", mask: (1 << B.PLAY) | latched });
+  setTimeout(() => send({ type: "buttons", mask: latched }), 250);
+}
+function startDemo() {
+  const bar = document.getElementById("demobar"), text = document.getElementById("demotext");
+  setTimeout(() => {
+    send({ type: "enc", role: EN.SELECT, n: 2 });                 // track 3, the lead
+    setTimeout(pressPlay, 300);
+  }, 600);
+  demoCount = 0;
+  bar.hidden = false;
+  text.textContent = "Demo: bass, chords, lead and drums play in C minor; the lead changes sound every 14 s (TOP Sounds first).";
+  demoTimer = setInterval(() => {
+    send({ type: "enc", role: EN.PRESETS, n: 1 });
+    demoCount++;
+  }, DEMO_STEP_MS);
+}
+function stopDemo() {
+  clearInterval(demoTimer);
+  demoTimer = 0;
+  pressPlay();                                                    // PLAY again = stop
+  document.getElementById("demobar").hidden = true;
+}
+document.getElementById("demostop").addEventListener("click", stopDemo);
+document.getElementById("demo").addEventListener("click", () => switchOn(true));
+document.getElementById("go").addEventListener("click", () => switchOn(false));
 document.addEventListener("visibilitychange", () => send({ type: "visible", on: !document.hidden }));
 </script>
 </body>

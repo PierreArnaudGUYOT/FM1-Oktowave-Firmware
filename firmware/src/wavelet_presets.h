@@ -2,29 +2,22 @@
  * The engine-A presets of the Wavelet Synthesizer (Pierre Arnaud GUYOT, GPL-3.0-or-later), mapped onto
  * the FM-1 engine: {WAVE WVLT PHAS/WDTH SPRS CUT RES FLT WNDW}, {A D S R}, ENV > FLT, MONO, FX(sends) */
 static const preset_t WAVELET_PRESETS[] = {
-    /* Pad */
-    {"NOISE WASH", {5, 6, 0, 31, 53, 74, 14, 0}, {43, 83, 127, 110}, 0, 0, FX(0, 0, 0, 102)},   /* Noise Wash Pad *9 */
-    /* FX */
-    {"SIREN SWP", {0, 2, 0, 0, 64, 95, 14, 0}, {15, 83, 127, 79}, 0, 0, FX(38, 0, 11, 38)},   /* Siren Sweep *9 */
-    /* Lead */
-    {"WAVLT LEAD", {0, 3, 0, 0, 48, 48, 2, 0}, {15, 83, 102, 79}, 21, 1, FX(0, 0, 28, 19)},   /* Wavelet Lead */
-    /* Brass & Wind */
-    {"WAVE BRASS", {0, 6, 0, 0, 35, 42, 3, 0}, {51, 83, 114, 76}, 21, 0, FX(0, 0, 32, 25)},   /* Wave Brass *8 */
-    /* FX */
-    {"WAVE RISER", {5, 6, 0, 0, 53, 74, 14, 0}, {95, 83, 127, 108}, 0, 0, FX(0, 0, 0, 76)},   /* Wave Riser *9 */
-    /* Pad */
-    {"WARM PAD", {0, 5, 0, 0, 53, 21, 2, 0}, {88, 95, 108, 100}, 0, 0, FX(0, 0, 15, 38)},   /* Warm Pad */
-    /* Lead */
-    {"ATTACK LD", {0, 6, 0, 0, 32, 32, 3, 0}, {15, 83, 102, 79}, 16, 1, FX(0, 0, 23, 19)},   /* Wave Attack Lead *9 */
-    {"DUB ECHO", {2, 2, 37, 0, 53, 53, 2, 0}, {15, 83, 102, 79}, 16, 1, FX(0, 0, 70, 25)},   /* Dub Echo Lead */
-    {"PULSE LEAD", {2, 5, 24, 0, 32, 32, 3, 0}, {15, 83, 102, 79}, 0, 1, FX(0, 0, 19, 0)},   /* Wave Pulse Lead *9 */
-    /* Strings */
-    {"CELLOS", {0, 6, 0, 0, 53, 0, 1, 0}, {76, 83, 114, 90}, 0, 0, FX(0, 51, 0, 44)},   /* Cello Section *8 */
-    {"SPICCATO", {0, 3, 0, 0, 48, 0, 2, 0}, {15, 76, 0, 69}, 16, 0, FX(0, 0, 0, 38)},   /* Spiccato Strings *8 */
-    {"SHIMMER ST", {0, 6, 0, 0, 64, 0, 1, 0}, {79, 83, 114, 95}, 0, 0, FX(0, 64, 0, 51)},   /* Shimmering Strings *8 */
-    /* FX */
-    {"WAVE ROBOT", {0, 0, 0, 0, 53, 74, 14, 0}, {15, 83, 127, 73}, 0, 0, FX(38, 0, 0, 0)},   /* Wave Robot *10 */
-    {"LASER SWP", {0, 1, 0, 0, 32, 106, 4, 89}, {15, 83, 102, 79}, 0, 0, FX(38, 0, 44, 0)},   /* Laser Sweep */
+    /* TOP Sounds */
+    {"NOISE WASH", {5, 6, 0, 31, 53, 74, 14, 0}, {43, 83, 127, 110}, 0, 0, FX(0, 0, 0, 102)},   /* Noise Wash Pad *9 TOP 2 */
+    {"SIREN SWP", {0, 2, 0, 0, 64, 95, 14, 0}, {15, 83, 127, 79}, 0, 0, FX(38, 0, 11, 38)},   /* Siren Sweep *9 TOP 3 */
+    {"WAVLT LEAD", {0, 3, 0, 0, 48, 48, 2, 0}, {15, 83, 102, 79}, 21, 1, FX(0, 0, 28, 19)},   /* Wavelet Lead TOP 6 */
+    {"WAVE BRASS", {0, 6, 0, 0, 35, 42, 3, 0}, {51, 83, 114, 76}, 21, 0, FX(0, 0, 32, 25)},   /* Wave Brass *8 TOP 10 */
+    {"WAVE RISER", {5, 6, 0, 0, 53, 74, 14, 0}, {95, 83, 127, 108}, 0, 0, FX(0, 0, 0, 76)},   /* Wave Riser *9 TOP 11 */
+    {"WARM PAD", {0, 5, 0, 0, 53, 21, 2, 0}, {88, 95, 108, 100}, 0, 0, FX(0, 0, 15, 38)},   /* Warm Pad TOP 12 */
+    {"ATTACK LD", {0, 6, 0, 0, 32, 32, 3, 0}, {15, 83, 102, 79}, 16, 1, FX(0, 0, 23, 19)},   /* Wave Attack Lead *9 TOP 13 */
+    {"DUB ECHO", {2, 2, 37, 0, 53, 53, 2, 0}, {15, 83, 102, 79}, 16, 1, FX(0, 0, 70, 25)},   /* Dub Echo Lead TOP 14 */
+    {"PULSE LEAD", {2, 5, 24, 0, 32, 32, 3, 0}, {15, 83, 102, 79}, 0, 1, FX(0, 0, 19, 0)},   /* Wave Pulse Lead *9 TOP 15 */
+    {"CELLOS", {0, 6, 0, 0, 53, 0, 1, 0}, {76, 83, 114, 90}, 0, 0, FX(0, 51, 0, 44)},   /* Cello Section *8 TOP 17 */
+    {"SILK STR", {0, 6, 0, 0, 74, 0, 1, 0}, {92, 83, 114, 102}, 0, 0, FX(0, 102, 0, 64)},   /* Silk Strings *8 TOP 18 */
+    {"SPICCATO", {0, 3, 0, 0, 48, 0, 2, 0}, {15, 76, 0, 69}, 16, 0, FX(0, 0, 0, 38)},   /* Spiccato Strings *8 TOP 19 */
+    {"SHIMMER ST", {0, 6, 0, 0, 64, 0, 1, 0}, {79, 83, 114, 95}, 0, 0, FX(0, 64, 0, 51)},   /* Shimmering Strings *8 TOP 20 */
+    {"WAVE ROBOT", {0, 0, 0, 0, 53, 74, 14, 0}, {15, 83, 127, 73}, 0, 0, FX(38, 0, 0, 0)},   /* Wave Robot *10 TOP 21 */
+    {"LASER SWP", {0, 1, 0, 0, 32, 106, 4, 89}, {15, 83, 102, 79}, 0, 0, FX(38, 0, 44, 0)},   /* Laser Sweep TOP 22 */
     /* Bass */
     {"WOBBLE BS", {1, 6, 0, 0, 32, 53, 2, 0}, {15, 83, 114, 64}, 0, 1, FX(51, 0, 0, 0)},   /* Wave Wobble Bass *7 */
     {"REESE SUB", {0, 4, 0, 0, 44, 21, 2, 0}, {15, 83, 102, 66}, 0, 1, FX(32, 0, 0, 0)},   /* Reese Sub */
@@ -91,3 +84,74 @@ static const preset_t WAVELET_PRESETS[] = {
     {"PH SCANNER", {0, 0, 56, 0, 58, 64, 14, 0}, {15, 83, 127, 95}, 0, 0, FX(0, 0, 32, 44)},   /* Phase Scanner */
     {"PH GLITCH", {1, 0, 23, 64, 53, 53, 2, 0}, {15, 83, 127, 73}, 0, 0, FX(0, 0, 38, 0)},   /* Phase Glitch */
 };
+
+/* the presets by name, for the power-on sounds (engines.c TRK_DEF) */
+#define WP_NOISE_WASH 0
+#define WP_SIREN_SWP 1
+#define WP_WAVLT_LEAD 2
+#define WP_WAVE_BRASS 3
+#define WP_WAVE_RISER 4
+#define WP_WARM_PAD 5
+#define WP_ATTACK_LD 6
+#define WP_DUB_ECHO 7
+#define WP_PULSE_LEAD 8
+#define WP_CELLOS 9
+#define WP_SILK_STR 10
+#define WP_SPICCATO 11
+#define WP_SHIMMER_ST 12
+#define WP_WAVE_ROBOT 13
+#define WP_LASER_SWP 14
+#define WP_WOBBLE_BS 15
+#define WP_REESE_SUB 16
+#define WP_ACID_SUB 17
+#define WP_LADDER_BS 18
+#define WP_S_H_LEAD 19
+#define WP_CHORUS_SQR 20
+#define WP_SAW_LEAD 21
+#define WP_WHISTLE 22
+#define WP_CLEAN_KEYS 23
+#define WP_TINE_PIANO 24
+#define WP_CLAVI 25
+#define WP_LOFI_PIANO 26
+#define WP_CHORUS_PAD 27
+#define WP_BRASS_PAD 28
+#define WP_MORPH_PAD 29
+#define WP_GLASS_PAD 30
+#define WP_SWEEP_PAD 31
+#define WP_ANALOG_PAD 32
+#define WP_STRING_MCH 33
+#define WP_ENSEMBLE 34
+#define WP_TREMOLO_ST 35
+#define WP_SOLINA 36
+#define WP_PIZZICATO 37
+#define WP_SLOW_STR 38
+#define WP_FR_HORN 39
+#define WP_NOISE_BRS 40
+#define WP_BRASS_STAB 41
+#define WP_STEEL_PLCK 42
+#define WP_HARP 43
+#define WP_SYN_PLUCK 44
+#define WP_UFO 45
+#define WP_ATOM_SCAN 46
+#define WP_WIND 47
+#define WP_ALARM 48
+#define WP_NOISE_SNR 49
+#define WP_CLOSED_HAT 50
+#define WP_OPEN_HAT 51
+#define WP_SYNTH_TOM 52
+#define WP_INIT 53
+#define WP_WINDOW_LD 54
+#define WP_CLARINET 55
+#define WP_PH_WOBBLE 56
+#define WP_PIPE_PHASE 57
+#define WP_DRIFT_PAD 58
+#define WP_DAWN_PHASE 59
+#define WP_NOISE_PH 60
+#define WP_PH_GLASS 61
+#define WP_DARK_PHASE 62
+#define WP_PH_ENSMBLE 63
+#define WP_PH_TREMOLO 64
+#define WP_SHIFT_HORN 65
+#define WP_PHASE_STAB 66
+#define WP_PH_SCANNER 67
+#define WP_PH_GLITCH 68
