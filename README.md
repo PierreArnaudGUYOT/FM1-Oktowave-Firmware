@@ -1,6 +1,6 @@
 # FM1 - Oktowave Firmware
 
-> **Two editions.** `main` = **OKTOWAVE**: Felucca with all its engines plus WAVELET. `wavelet-groovebox` = **OKTOGROOVE**: Felucca's groovebox with WAVELET as its sound engine (WAVELET + DRUM only offered, the other engines hidden). Same sources, one define (`OKTOWAVE_GROOVEBOX`) in `src/felucca.c`; see the manual, section 12.
+> **Three editions.** `main` = **OKTOWAVE**: Felucca with all its engines plus WAVELET. `wavelet-groovebox` = **OKTOGROOVE**: Felucca's groovebox with WAVELET as its sound engine (WAVELET + DRUM offered, the others hidden). `oktoduo` = **OKTODUO**: two synths, Felucca's FM6 and WAVELET, plus the drum kits. Same sources, one define per edition (`OKTOWAVE_GROOVEBOX`, `OKTOWAVE_DUO`); see the manual, section 12 of each branch. The define is in `src/felucca.c` and in `web/emu/felucca_web.c` (the workflow checks that they agree).
 
 [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-blue.svg)](LICENSE)
 
