@@ -54,9 +54,9 @@ int main(void)
           !eng_valid(NENGINES));
     check("a hidden engine is shown as the first (eng_rank), the others at their place",
           eng_rank(0) == 0u && eng_rank(ENGI_FM6) == 0u && eng_rank(ENGI_WAVELET) == 0u && eng_rank(ENGI_DRUM) == 1u);
-    check("eng_step wraps over the two both ways, from a hidden engine too",
+    check("eng_step wraps over the two both ways; from a hidden engine + goes to the first, - to the last",
           eng_step(ENGI_WAVELET, 1) == ENGI_DRUM && eng_step(ENGI_DRUM, 1) == ENGI_WAVELET && eng_step(ENGI_WAVELET, -1) == ENGI_DRUM &&
-          eng_step(ENGI_DRUM, -1) == ENGI_WAVELET && eng_step(0, 1) == ENGI_DRUM && eng_step(0, -1) == ENGI_DRUM);
+          eng_step(ENGI_DRUM, -1) == ENGI_WAVELET && eng_step(0, 1) == ENGI_WAVELET && eng_step(0, -1) == ENGI_DRUM);
     check("the power-on tracks and the fallback of old projects are the WAVELET ones, the drums last",
           TRK_DEF[0][0] == ENGI_WAVELET && TRK_DEF[1][0] == ENGI_WAVELET && TRK_DEF[2][0] == ENGI_WAVELET && TRK_DEF[3][0] == ENGI_DRUM &&
           BOOT_DEF[1][1] == WP_WARM_PAD);
