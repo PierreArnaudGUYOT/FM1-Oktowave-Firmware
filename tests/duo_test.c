@@ -55,9 +55,9 @@ int main(void)
           !eng_valid(NENGINES));
     check("a hidden engine is shown as the first (FM6), the others at their place",
           eng_rank(0) == 0u && eng_rank(ENGI_FM6) == 0u && eng_rank(ENGI_WAVELET) == 1u && eng_rank(ENGI_DRUM) == 2u);
-    check("eng_step wraps over the three both ways, from a hidden engine too",
+    check("eng_step wraps over the three both ways; from a hidden engine + goes to the first, - to the last",
           eng_step(ENGI_FM6, 1) == ENGI_WAVELET && eng_step(ENGI_WAVELET, 1) == ENGI_DRUM && eng_step(ENGI_DRUM, 1) == ENGI_FM6 &&
-          eng_step(ENGI_FM6, -1) == ENGI_DRUM && eng_step(ENGI_DRUM, -1) == ENGI_WAVELET && eng_step(0, 1) == ENGI_WAVELET && eng_step(0, -1) == ENGI_DRUM);
+          eng_step(ENGI_FM6, -1) == ENGI_DRUM && eng_step(ENGI_DRUM, -1) == ENGI_WAVELET && eng_step(0, 1) == ENGI_FM6 && eng_step(0, -1) == ENGI_DRUM);
     check("the power-on tracks and the fallback of old projects: FM bass, WAVELET pad, FM keys, drums",
           TRK_DEF[0][0] == ENGI_FM6 && TRK_DEF[1][0] == ENGI_WAVELET && TRK_DEF[2][0] == ENGI_FM6 && TRK_DEF[3][0] == ENGI_DRUM &&
           BOOT_DEF[1][1] == WP_WARM_PAD);

@@ -54,8 +54,8 @@ audio and MIDI. This manual covers what OKTODUO adds; for the rest, Felucca's
 sequencer (ratchets, chance, accents, slides, conditions), arpeggiator, chord keys, effects, USB audio and MIDI, and <b>two synths to choose
 from for each track</b>: <b>FM6</b>, Felucca's six-operator FM synth (32 algorithms, the DX-style voices and the voice bank), and <b>WAVELET</b>,
 the Wavelet Synthesizer's engines A and B (108 presets, OktoPierre's TOP Sounds first), plus <b>DRUM</b>, Felucca's kits, for the rhythm
-tracks. The other engines of Felucca (ANALOG, PHASE, LOFI, SAMPLE, VOICE, TRIO, WHEEL, GRAIN, PHYS, NOISE, SLICE) are not offered; they stay in
-the firmware, so a project or a user preset saved by Felucca or OKTOWAVE that uses one still loads and sounds (the ENG column then shows its real name, the EDIT keys show none lit, and turning the engine knob replaces it by one of the three). The editions with more engines are OKTOWAVE (all of them) and OKTOGROOVE (WAVELET and DRUM only). Section 12 has the details.</p>
+tracks. The other engines of Felucca (ANALOG, PHASE, LOFI, SAMPLE, VOICE, TRIO, WHEEL, GRAIN, PHYS, NOISE, SLICE) are not offered (their factory sounds are not in the PRESETS list, they are not on the EDIT keys); they stay in
+the firmware, so a project or a user preset saved by Felucca or OKTOWAVE that uses one still loads and sounds (a user preset saved on one of them stays in the PRESETS list; the ENG column then shows its real name and the EDIT keys show none lit). The editions with more engines are OKTOWAVE (all of them) and OKTOGROOVE (WAVELET and DRUM only). Section 12 has the details.</p>
 </div>
 
 <nav class="toc">
@@ -413,16 +413,21 @@ and its vendor describe it. When this edition was written no source of it was pu
 <a href="https://fm1-editor.com/firmware/">fm1-editor.com</a> lists it as "Not on GitHub"; Synth Anatomy mentions a planned open-source release), so OKTODUO is built on Felucca,
 whose source is open. <b>It does not use any of Baud Girl's code, designs or assets</b>: it only shares the idea of two synths. Baud Girl's second synth is virtual analog;
 here the second synth is WAVELET. OKTODUO is not affiliated with or endorsed by Baud Girl.</li>
-<li><b>What changes from Felucca</b>: the engine list (PRESETS knob 2 / ENG column and the EDIT layer's white keys: FM6, WAVELET, DRUM) and the
-power-on and project defaults. At power-on the four tracks play together after a press of PLAY, in C minor: track 1 the FM bass <code>FM BASS</code>
+<li><b>What changes from Felucca</b>: the engine list (PRESETS knob 2 / ENG column and the EDIT layer's white keys: FM6, WAVELET, DRUM, so INIT and
+CLEAN INIT are the fourth and fifth white keys) and the power-on tracks. Tracks 2 to 4 of a project saved in Felucca's first format (<code>FUN1</code>)
+also start as the WAVELET pad, the FM6 electric piano and the DRUM kit, with no pattern. At power-on the four tracks play together after a press of PLAY, in C minor: track 1 the FM bass <code>FM BASS</code>
 (pattern <code>OKTOBASS</code>), track 2 the pad <code>WARM PAD</code> of WAVELET (<code>OKTOCHRD</code>), track 3 the FM electric piano
 <code>TINE EP</code> (<code>OKTOLEAD</code>), track 4 the drum kit (<code>BEAT</code>). Nothing else changes: the storage formats, the editor
-protocol, USB and MIDI are Felucca's.</li>
+protocol, USB and MIDI are Felucca's byte for byte (WAVELET's stars: section 10).</li>
 <li><b>The WAVELET engine</b> is as described above (sections 4 to 8). A WAVELET part plays at most three voices, and a WAVELET voice counts as two of
 the eight voices the four tracks share (so four WAVELET voices in all, the oldest released voice going first when a note needs room), so that the FM-1 is never asked
 for more than it does for Felucca's eight ANALOG voices. The FM6 engine's voices count one each.</li>
-<li><b>Old projects</b>: a track left on an engine this edition does not offer plays as before; the ENG column shows its real name, and turning the engine knob replaces it by FM6, WAVELET or DRUM.</li>
-<li><b>Install and try</b>: the same package format and installer as the other editions (the package is <code>oktoduo-X.Y.fwsc</code>, released under the tag <code>duo-vX.Y</code>); the version string reads <code>OKTODUO v0.1</code>. Try it in
+<li><b>Old projects</b>: a track left on an engine this edition does not offer plays as before. The ENG column shows its real name, the engine knob goes to FM6
+(clockwise) or DRUM (counter-clockwise), and the PRESETS knob to the first sound of the list (clockwise) or the last one. Felucca's <b>RESTORE LAST</b> brings the
+previous session back at the first power-on after Felucca or OKTOWAVE, so the first track you meet can be such a one. The user presets saved on a hidden engine stay in the PRESETS list.</li>
+<li><b>The editor</b> (<code>webapp/editor/</code>) is Felucca's: it lists all fifteen engines, in its PRESETS mirror too, and can select any of them.
+Only the device's own pages offer FM6, WAVELET and DRUM alone.</li>
+<li><b>Install and try</b>: the same package format and installer as the other editions (projects saved with one load in the others, except that plain Felucca does not load a project that uses WAVELET, section 1; the package is <code>oktoduo-X.Y.fwsc</code>, released under the tag <code>duo-vX.Y</code>); the version string reads <code>OKTODUO v0.1</code>. Try it in
 the browser: the page of this edition under <code>/duo/</code> on the project's site.</li>
 </ul>
 <p class="dim">OKTODUO manual, version 0.1, 2026-10-18.</p>
