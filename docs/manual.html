@@ -40,12 +40,14 @@
 <main>
 <h1>OKTOGROOVE <small>manual · version 0.1 · for the M-VAVE FM-1</small></h1>
 <p>OKTOGROOVE is the groovebox edition of OKTOWAVE, an alternative firmware for the M-VAVE FM-1 pocket synthesizer: Hügelton Instruments'
-<a href="https://github.com/hugelton/Felucca">Felucca</a> 1.6.1 reduced to one synthesis engine, <b>WAVELET</b>, the
-subtractive engine of the <a href="https://github.com/PierreArnaudGUYOT/Free-Wavelet-Synthesizer-VST">Wavelet
+<a href="https://github.com/hugelton/Felucca">Felucca</a> 1.6.1 reduced to a groovebox around one synthesis engine, <b>WAVELET</b>, the
+engines of the <a href="https://github.com/PierreArnaudGUYOT/Free-Wavelet-Synthesizer-VST">Wavelet
 Synthesizer</a> by Pierre Arnaud GUYOT (OktoPierre), rewritten for the FM-1's processor: both of its engines (A, subtractive, and B, additive) and 108 of its presets, all of OktoPierre's TOP Sounds among them.
 Everything else is Felucca: four tracks, the sequencer, arpeggiator, chords, effects, USB
 audio and MIDI. This manual covers what OKTOGROOVE adds; for the rest, Felucca's
 <a href="https://github.com/hugelton/Felucca/wiki/Home">wiki</a> is the reference.</p>
+<p>The same sources make two other editions, each with its own installer, browser demo and manual: <a href="https://pierrearnaudguyot.github.io/FM1-Oktowave-Firmware/">OKTOWAVE</a>
+(all of Felucca's engines plus WAVELET) and <a href="https://pierrearnaudguyot.github.io/FM1-Oktowave-Firmware/duo/">OKTODUO</a> (two synths, FM6 and WAVELET, and the drum kits).</p>
 
 <div class="card">
 <p><b>This is the groovebox edition (branch <code>wavelet-groovebox</code>).</b> It is Felucca's groovebox (four tracks, the sequencer,
@@ -94,8 +96,8 @@ Edge (Web MIDI is needed: recent Firefox asks for a permission, Safari does not 
 <a href="https://github.com/PierreArnaudGUYOT/FM1-Oktowave-Firmware/releases">releases</a>, under the tag <code>groovebox-v0.1</code>).</p>
 <p>OKTOGROOVE is a Felucca package: it installs over Felucca, the official firmware or another custom firmware the
 same way, and Felucca's installer, editor and backup tools work with it. Songs and user presets saved by
-Felucca 1.6 load as they are; a song that used a WAVELET part will not sound right on plain Felucca (the
-engine is not there).</p>
+Felucca 1.6 load as they are; a song or a user preset that uses a WAVELET part is not loaded by plain Felucca (it
+shows the slot as empty: the engine is not there), and the songs this firmware saves from its power-on tracks do use WAVELET.</p>
 
 <h2 id="try">2. Try it in the browser</h2>
 <p>The page opens on a window with four choices: <b>Run the demo</b> (the four tracks play and the lead walks through the sounds,
@@ -378,7 +380,7 @@ For a bass with a fixed-frequency feel, play it low with a low CUT.</li>
 </ul>
 
 <h2 id="build">10. Build and test it yourself</h2>
-<p>The power-on tracks and their patterns differ from Felucca's: that is OKTOWAVE's own (a project saved by Felucca, and the host tests, still start from Felucca's defaults). <b>Favourites</b> do not exist for the WAVELET engine (Felucca's favourites table has no room for a fifteenth engine).</p>
+<p>The power-on tracks and their patterns differ from Felucca's: that is OKTOWAVE's own (a project saved by Felucca, and the host tests, still start from Felucca's defaults). <b>Favourites</b>: a WAVELET preset is starred like any other (FAV on the PRESETS page, the editor). Felucca's favourites table has no row left for a fifteenth engine, so WAVELET's stars are bits in bytes 8 to 31 of the row of the retired DIGITAL engine. A settings backup restored on plain Felucca loses them and nothing else.</p>
 <p>The source is on <a href="https://github.com/PierreArnaudGUYOT/FM1-Oktowave-Firmware">GitHub</a>. The firmware
 builds like Felucca (<code>BUILDING.md</code>: JieLi's pi32v2 clang 4.0.1, Linux x86-64; three files of the
 Apache-2.0 AC79 SDK; Python with Pillow and fontTools). The repository's GitHub Actions workflow does all of it

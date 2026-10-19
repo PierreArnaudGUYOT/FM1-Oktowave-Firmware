@@ -7,24 +7,38 @@ typedef struct {
     uint32_t user, filter;
 } favorites_t;
 static favorites_t favorites __attribute__((section(".pool")));
+/* OKTOWAVE: rows [14] (the MIDI learn table) and [15] (the palette) leave WAVELET (engine 14) no row of its own. Its starred presets
+ * are bits of the retired DIGITAL row (engine 1), from byte 8 on (DIGITAL's own eight presets used byte 0; settings_persist.c
+ * clears that byte only): 24 bytes, so presets 0 .. 191 (WAVELET has 108). Not in a FELUCCA_FM4 test build (no WAVELET there) */
+#define FAV_WAV_ROW 1u
+#define FAV_WAV_OFS 8u
+#define FAV_WAV_MAX (8u * (32u - FAV_WAV_OFS))
+static uint32_t fav_limit(uint32_t engine)               /* the presets that can be starred (0 = none) */
+{
+    if (engine == ENGI_WAVELET)
+        return FELUCCA_FM4 ? 0u : FAV_WAV_MAX;
+    return engine < 14u ? 256u : 0u;
+}
+static uint8_t *fav_byte(uint32_t engine, uint32_t preset)
+{
+    return engine == ENGI_WAVELET ? &favorites.factory[FAV_WAV_ROW][FAV_WAV_OFS + preset / 8u] : &favorites.factory[engine][preset / 8u];
+}
 static int favorite_has(uint32_t engine, uint32_t preset)
 {
     if (engine == NENGINES)
         return preset < UP_SLOTS && ((favorites.user >> preset) & 1u);
-    return engine < NENGINES && engine < 14u && preset < 256u &&   /* OKTOWAVE: [14] is the MIDI learn table, [15] the palette:
-                                                                    * WAVELET (engine 14) has no favourites */
-        ((favorites.factory[engine][preset / 8u] >> (preset % 8u)) & 1u);
+    return engine < NENGINES && preset < fav_limit(engine) && ((*fav_byte(engine, preset) >> (preset % 8u)) & 1u);
 }
 static int favorite_set(uint32_t engine, uint32_t preset, int on)
 {
-    if (engine > NENGINES || (engine == NENGINES ? preset >= UP_SLOTS : engine >= 14u || preset >= 256u))
+    if (engine > NENGINES || (engine == NENGINES ? preset >= UP_SLOTS : preset >= fav_limit(engine)))
         return 0;
     if (favorite_has(engine, preset) == !!on) return 0;
     if (engine == NENGINES) {
         if (on) favorites.user |= 1u << preset;
         else favorites.user &= ~(1u << preset);
     } else {
-        uint8_t *b = &favorites.factory[engine][preset / 8u];
+        uint8_t *b = fav_byte(engine, preset);
         if (on) *b |= (uint8_t)(1u << (preset % 8u));
         else *b &= (uint8_t)~(1u << (preset % 8u));
     }

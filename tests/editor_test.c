@@ -210,6 +210,16 @@ static int preferences(void)
     bad += check("FAV_SET marks DRUM as a normal engine", host_wire[5] == 3 && favorite_has(ENGI_DRUM, 0));
     request(ED_FAV_GET, a, 4);
     bad += check("FAV_GET reads the bounded favorite range", host_wire[5] == 0 && host_wire[10] == 1);
+    a[0] = ENGI_WAVELET; a[1] = 100; a[2] = 64; a[3] = 1;                /* OKTOWAVE: WAVELET's stars are bits of the retired DIGITAL row, from byte 8 */
+    request(ED_FAV_SET, a, 4);
+    bad += check("FAV_SET stars a WAVELET preset in the retired DIGITAL row (byte 8 + 12, bit 4; byte 0, rows 14 and 15 untouched)",
+        host_wire[5] == 3 && favorite_has(ENGI_WAVELET, 100) && !favorite_has(ENGI_WAVELET, 99) && !favorite_has(ENGI_DRUM, 100) &&
+        favorites.factory[1][8 + 12] == 0x10u && favorites.factory[1][0] == 0 && !favorites.factory[14][0] && !favorites.factory[15][0]);
+    request(ED_FAV_GET, a, 4);
+    bad += check("FAV_GET reads it back", host_wire[5] == 0 && host_wire[10] == 1);
+    a[3] = 0; request(ED_FAV_SET, a, 4);
+    bad += check("FAV_SET takes the WAVELET star off again", host_wire[5] == 3 && !favorite_has(ENGI_WAVELET, 100) && !favorites.factory[1][8 + 12]);
+    a[0] = ENGI_DRUM; a[1] = 0; a[2] = 64; a[3] = 1;
     a[0] = NENGINES; a[1] = 31; request(ED_FAV_SET, a, 4);
     bad += check("empty user slot cannot be starred", host_wire[5] == 1 && !favorite_has(NENGINES, 31));
     up_store(31, "Saved"); request(ED_FAV_SET, a, 4);

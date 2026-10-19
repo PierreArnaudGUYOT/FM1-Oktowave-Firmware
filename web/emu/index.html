@@ -151,7 +151,8 @@ const PLAY_GREEN = 14;
 const WHITE = [0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 26];
 const BLACK = [1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25];
 const BLACK_AFTER = [0, 1, 2, 4, 5, 7, 8, 9, 11, 12, 14];      // the white key each black one follows
-const STORE = "felucca-emu-flash", KNOBS_ON = "felucca-emu-knobs", KNOB_MODE = "felucca-emu-knobmode";
+const EDITION = document.body.dataset.edition || "oktowave";                       // one flash image per edition (the pages share an origin)
+const STORE = "felucca-emu-flash" + (EDITION === "oktowave" ? "" : "-" + EDITION), KNOBS_ON = "felucca-emu-knobs", KNOB_MODE = "felucca-emu-knobmode";
 
 // ------------------------------------------------------------------ the panel
 // Two drawings of the same controls: WIDE after the FM-1's own layout, TALL for a phone held upright (the
@@ -575,10 +576,10 @@ async function switchOn(demo) {
 let demoTimer = 0, demoCount = 0;
 const DEMO_STEP_MS = 14000;
 // the lead's tour, in steps of the PRESETS knob (a turn of it is ONE step whatever its size: the firmware reads the sign): the TOP Sounds of
-// OKTOWAVE and OKTOGROOVE (the lead is the 9th sound, the TOP Sounds end at the 15th: six up, six back), the FM6 sounds of OKTODUO (bell,
+// OKTOWAVE and OKTOGROOVE (the lead PULSE LEAD is a TOP Sound: six steps up through the sounds after it, six back), the FM6 sounds of OKTODUO (bell,
 // brass, marimba, organ, pluck, skipping the bass and the pad; then back to the electric piano)
 const DEMO_TOURS = { oktowave: [1, 1, 1, 1, 1, 1, -6], oktogroove: [1, 1, 1, 1, 1, 1, -6], oktoduo: [1, 2, 2, 1, 1, -7] };
-const DEMO_TOUR = DEMO_TOURS[document.body.dataset.edition] || DEMO_TOURS.oktowave;
+const DEMO_TOUR = DEMO_TOURS[EDITION] || DEMO_TOURS.oktowave;
 function turnSteps(k, delta) {                                   // |delta| single steps, 90 ms apart (the knob on the panel turns with each)
   const dir = Math.sign(delta);
   for (let i = 0; i < Math.abs(delta); i++) setTimeout(() => turn(k, dir), i * 90);
@@ -615,6 +616,7 @@ function endTour(why) {
 // the player touches the panel: the sound tour stops (it would change the sound of whichever track is selected), the groove plays on
 function takeOver(e) {
   if (e.target && e.target.id === "demostop") return;
+  if (e.type === "keydown" && ["Tab", "Shift", "Control", "Alt", "Meta"].includes(e.key)) return;   // moving about the page is not playing
   endTour("Demo: the sound tour stopped, you have the panel. The tracks keep playing; PLAY stops them.");
 }
 function stopDemo() {
