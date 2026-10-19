@@ -1513,17 +1513,22 @@ static void select_engine(uint32_t e)
  * PRESETS page browse it) */
 static uint32_t preset_all_pos(uint32_t *total)          /* list index of the selected track's preset */
 {
-    uint32_t n = 0, cur = 0, e, r;
+    uint32_t n = 0, cur = 0, e, r, found = 0;
     for (r = 0; r < NENG_SHOWN; r++) {                  /* (engines.c ENGINE_ORDER) */
         const engine_t *en = ENGINES[e = eng_vis(r)];
-        if (e == TSEL->eng_req)
+        if (e == TSEL->eng_req) {
             cur = n + preset_rank(en, preset_orig(en, TSEL->preset % (en->npresets ? en->npresets : 1u)));
+            found = 1;
+        }
         n += preset_shown(e);
     }
-    if (user_of(TSEL) < UP_SLOTS)
+    if (user_of(TSEL) < UP_SLOTS) {
         cur = n + up_rank(user_of(TSEL));
+        found = 1;
+    }
     *total = n + up_count();
-    return cur;
+    return found ? cur : *total;        /* (OKTOWAVE editions: a track on an engine this firmware does not show is not in the list: the
+                                         * knob goes to its first sound on +, its last on -; not the first sound's neighbours) */
 }
 
 /* list index n (< total) -> engine, *k its preset; NENGINES = user preset, *k its slot */

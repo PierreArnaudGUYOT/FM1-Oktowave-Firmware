@@ -41,7 +41,8 @@ filter (low-, high- or band-pass in bands, with slope and resonance) and a windo
 Changes to Felucca's own files are small: engine table, order and power-on parts (`engines.c`, `core.h`, `main.c`), the tick
 in `fx.c`, the voice budget's weights (`voice.c`: a WAVELET voice counts two), engine names, costs, MIDI CC and categories (`params.c`, `fx.c`, `midi_control.c`, `category.c`), the favourites
 and MIDI-learn guards (`favorites.c`, `midi_learn.c`), the version string, package names, installer and emulator pages,
-`tests/target_budget.py`. Felucca's own power-on sounds stay what projects of older formats and the host tests see.
+`tests/target_budget.py`. On `main` Felucca's own power-on sounds stay what projects of older formats and the host tests see; the two edition
+branches use their own tracks there too. WAVELET's starred presets are kept in the retired DIGITAL row of the favourites table (`favorites.c`).
 
 ## Engine test (any C compiler and Node.js)
 

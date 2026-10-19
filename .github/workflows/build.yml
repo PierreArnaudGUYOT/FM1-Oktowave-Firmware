@@ -82,9 +82,23 @@ jobs:
           ED=OKTOWAVE                                   # the edition this tree builds: a define in felucca.c (tools/build.py reads the same)
           if grep -q '^#define OKTOWAVE_DUO\b' firmware/src/felucca.c; then ED=OKTODUO
           elif grep -q '^#define OKTOWAVE_GROOVEBOX\b' firmware/src/felucca.c; then ED=OKTOGROOVE; fi
+          case "$REF" in                               # a tag names its edition: v (OKTOWAVE), groovebox-v, duo-v; the tree must be that edition
+            refs/tags/v*) WANT=OKTOWAVE;;
+            refs/tags/groovebox-v*) WANT=OKTOGROOVE;;
+            refs/tags/duo-v*) WANT=OKTODUO;;
+            refs/tags/*) echo "tag $REF: the prefix must be v, groovebox-v or duo-v"; exit 1;;
+            *) WANT="$ED";;
+          esac
+          [ "$WANT" = "$ED" ] || { echo "tag $REF is for $WANT but this tree builds $ED: tag the edition's own branch"; exit 1; }
           echo "release=$REL" >> "$GITHUB_OUTPUT"
           echo "edition=$ED" >> "$GITHUB_OUTPUT"
           echo "release: '$REL', edition: $ED"
+      - name: "The edition's define is the same in the firmware and the browser build"
+        run: |
+          for D in OKTOWAVE_GROOVEBOX OKTOWAVE_DUO; do
+            A=$(grep -c "^#define $D\b" firmware/src/felucca.c || true); B=$(grep -c "^#define $D\b" web/emu/felucca_web.c || true)
+            [ "$A" = "$B" ] || { echo "$D: felucca.c has $A, felucca_web.c has $B"; exit 1; }
+          done
       - name: Build the firmware
         env:
           REL: ${{ steps.ver.outputs.release }}
@@ -155,26 +169,32 @@ jobs:
           cp docs/manual.html build/site/manual/index.html
           cp docs/controls.jpg build/site/manual/
           ls -R build/site | head -40
-      - name: "Keep this branch's site (the main site shows the other editions' under /groovebox/ and /duo/)"
+      - name: "Keep this edition's site (the main site shows the other editions' under /groovebox/ and /duo/)"
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: site-${{ github.ref_name }}
+          name: site-${{ steps.ver.outputs.edition }}
           path: build/site
           retention-days: 90
-      - name: "Add the other editions' sites (main only: the latest successful run of each edition's branch)"
-        if: github.ref == 'refs/heads/main'
+      - name: "Add the other editions' sites (main and its v tags: the latest successful push run of each edition's branch)"
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           LINKS=""
           for E in wavelet-groovebox:groovebox:OKTOGROOVE oktoduo:duo:OKTODUO; do
             BR=${E%%:*}; REST=${E#*:}; DIR=${REST%%:*}; NAME=${REST#*:}
-            ID=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow build.yml --branch "$BR" --status success --limit 1 --json databaseId --jq '.[0].databaseId' || true)
-            if [ -n "$ID" ] && gh run download "$ID" --repo "$GITHUB_REPOSITORY" -n "site-$BR" -D "build/site/$DIR"; then
+            ID=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow build.yml --branch "$BR" --event push --status success --limit 1 --json databaseId --jq '.[0].databaseId' || true)
+            if [ -n "$ID" ]; then        # a run of this repository, on a push to that branch (never a pull request from a fork)
+              WHO=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$ID" --jq '[.event, .head_repository.full_name, .head_branch] | join(" ")' || true)
+              [ "$WHO" = "push $GITHUB_REPOSITORY $BR" ] || { echo "run $ID is not a push of $BR here ($WHO)"; ID=""; }
+            fi
+            if [ -n "$ID" ] && { gh run download "$ID" --repo "$GITHUB_REPOSITORY" -n "site-$NAME" -D "build/site/$DIR" ||
+                                 gh run download "$ID" --repo "$GITHUB_REPOSITORY" -n "site-$BR" -D "build/site/$DIR"; }; then
               LINKS="$LINKS · <a href=\"$DIR/\">$NAME edition</a>"
               echo "$NAME site from run $ID"
             else
-              echo "no $NAME site yet"
+              echo "::warning::no $NAME site (no successful push run of $BR with its artifact, or it expired after 90 days): this deploy has no /$DIR/"
             fi
           done
           if [ -n "$LINKS" ]; then
@@ -210,6 +230,9 @@ jobs:
   pages:
     needs: build
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
+    concurrency:
+      group: pages                 # a deploy at a time, none cancelled (a main push, a v tag and refresh-main can come together)
+      cancel-in-progress: false
     runs-on: ubuntu-24.04
     permissions:
       pages: write
@@ -241,8 +264,9 @@ jobs:
           PRE=""; case "$TAG" in v0.*|*-v0.*) PRE="--prerelease";; esac
           PK=$(ls "$DIR"/*.fwsc | head -1); NAME=$(basename "$PK" .fwsc)            # e.g. oktoduo-0.1
           ED=$(echo "${NAME%%-*}" | tr a-z A-Z); VER="${NAME#*-}"
+          case "$ED" in OKTOGROOVE) SUB=groovebox/;; OKTODUO) SUB=duo/;; *) SUB="";; esac
           gh release create "$TAG" $PRE --repo "$GITHUB_REPOSITORY" --title "$ED $VER" \
-            --notes "$ED $VER: a firmware for the M-VAVE FM-1 built on Felucca, with the Wavelet Synthesizer's WAVELET engine. Install with the web installer (https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/, the edition's page) or tools/fm1_install.py. Not yet run on a real FM-1: install at your own risk, keep the way back to the official firmware. SHA-256 sums are in SHA256SUMS." \
+            --notes "$ED $VER: a firmware for the M-VAVE FM-1 built on Felucca, with the Wavelet Synthesizer's WAVELET engine. Install with the web installer (https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/${SUB}) or tools/fm1_install.py. Not yet run on a real FM-1: install at your own risk, keep the way back to the official firmware. SHA-256 sums are in SHA256SUMS." \
             "$DIR"/*.fwsc "$DIR"/*.bin "$DIR"/SHA256SUMS "$DIR"/LICENSE "$DIR"/LICENSING.md
   refresh-main:
     needs: build
