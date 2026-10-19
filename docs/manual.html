@@ -53,9 +53,9 @@ audio and MIDI. This manual covers what OKTOGROOVE adds; for the rest, Felucca's
 <p><b>This is the groovebox edition (branch <code>wavelet-groovebox</code>).</b> It is Felucca's groovebox (four tracks, the sequencer,
 arpeggiator, chord keys, effects, USB audio and MIDI) with <b>WAVELET as its sound engine</b>: the engines you can pick are
 <b>WAVELET</b> (108 presets, OktoPierre's TOP Sounds first) and <b>DRUM</b> (Felucca's kits, for the rhythm tracks). The other twelve
-engines of Felucca (ANALOG, FM6, PHASE, LOFI, SAMPLE, VOICE, TRIO, WHEEL, GRAIN, PHYS, NOISE, SLICE) are no longer offered: not in the
-PRESETS list, not on the EDIT keys. They stay in the firmware, so a project or a user preset saved by Felucca or OKTOWAVE that uses
-one still loads and sounds; the ENG column then shows its real name (the EDIT keys show none lit), and turning the engine knob replaces it by WAVELET or DRUM. The edition with
+engines of Felucca (ANALOG, FM6, PHASE, LOFI, SAMPLE, VOICE, TRIO, WHEEL, GRAIN, PHYS, NOISE, SLICE) are no longer offered: their factory sounds are not in the
+PRESETS list, they are not on the EDIT keys. They stay in the firmware, so a project or a user preset saved by Felucca or OKTOWAVE that uses
+one still loads and sounds (a user preset saved on one of them stays in the PRESETS list); the ENG column then shows its real name and the EDIT keys show none lit. The edition with
 all the engines is OKTOWAVE (branch <code>main</code>). A few more details are in section 12.</p>
 </div>
 
@@ -407,18 +407,23 @@ M-VAVE, nor by Hügelton Instruments.</li>
 </ul>
 <h2 id="groove">12. The groovebox edition</h2>
 <ul>
-<li><b>What changes</b>: the engine list (PRESETS knob 2 / ENG column, the EDIT layer's white keys: WAVELET first, DRUM second) and the
-power-on and project defaults (the four WAVELET / DRUM tracks of section 3 also start an empty or an older project). Nothing else:
-the sequencer, the effects, USB and MIDI, the editor protocol, the storage formats are Felucca's, byte for byte.</li>
+<li><b>What changes</b>: the engine list (PRESETS knob 2 / ENG column, the EDIT layer's white keys: WAVELET first, DRUM second, so INIT and
+CLEAN INIT are the third and fourth white keys) and the power-on tracks of section 3. Tracks 2 to 4 of a project saved in Felucca's first format
+(<code>FUN1</code>) also start as the WAVELET pad, the WAVELET lead and the DRUM kit, with no pattern. Nothing else: the sequencer, the effects, USB and
+MIDI, the editor protocol, the storage formats are Felucca's, byte for byte (WAVELET's stars: section 10).</li>
 <li><b>Why</b>: the FM-1 is a small machine; this edition is the one to play when WAVELET is the sound you want, without the other
 engines in the way, and the base for giving WAVELET more room later (the flash and RAM of the unused engines).</li>
-<li><b>Old projects</b>: a track left on an engine this edition does not offer plays as before. The ENG column shows its real name; turning
-the engine knob replaces it by WAVELET or DRUM.</li>
+<li><b>Old projects</b>: a track left on an engine this edition does not offer plays as before. The ENG column shows its real name, the engine
+knob goes to WAVELET (clockwise) or DRUM (counter-clockwise), and the PRESETS knob to the first sound of the list (clockwise) or the last one. Felucca's
+<b>RESTORE LAST</b> brings the previous session back at the first power-on after Felucca or OKTOWAVE, so the first track you meet can be such a one.
+The user presets saved on a hidden engine stay in the PRESETS list.</li>
+<li><b>The editor</b> (<code>webapp/editor/</code>) is Felucca's: it lists all fifteen engines, in its PRESETS mirror too, and can select any of them.
+Only the device's own pages offer WAVELET and DRUM alone.</li>
 <li><b>Voices</b>: as in OKTOWAVE, a WAVELET voice counts as two of the eight voices the four tracks share, and a WAVELET track plays three voices at most:
 four WAVELET voices in all, the oldest released one going first when a note needs room.</li>
 <li><b>Install</b>: the same package format and installer as OKTOWAVE and Felucca (the package is <code>oktogroove-X.Y.fwsc</code>, released under the tag <code>groovebox-vX.Y</code>); the version string reads <code>OKTOGROOVE v0.1</code>.
-Both editions can be installed one over the other; projects saved with one load in the other (a WAVELET track needs an edition that
-has WAVELET).</li>
+The editions can be installed one over the other; projects saved with one load in the others.
+Plain Felucca does not load a project that uses WAVELET (section 1), and every project saved from this edition's power-on tracks does.</li>
 <li><b>Try it in the browser</b>: the page of this edition under <code>/groovebox/</code> on the project's site.</li>
 </ul>
 <p class="dim">OKTOGROOVE manual, version 0.1, 2026-10-18.</p>

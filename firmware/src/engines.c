@@ -166,6 +166,8 @@ static uint32_t eng_rank(uint32_t e)
 }
 static uint32_t eng_step(uint32_t e, int32_t dir)
 {
+    if (!eng_ok(e % NENGINES))                   /* an engine this edition does not offer (an older project's): + goes to the first engine, - to the last */
+        return eng_vis(dir > 0 ? 0u : NENG_SHOWN - 1u);
     return eng_vis((eng_rank(e % NENGINES) + (dir > 0 ? 1u : NENG_SHOWN - 1u)) % NENG_SHOWN);
 }
 
